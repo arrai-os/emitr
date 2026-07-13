@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EMITR · FIRESTARTER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Azeret+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#060606; --surface:#0e0e0e; --surface-hover:#161616; --border:#1a1a1a;
+    --accent:#8b2020; --accent-light:#b83030; --accent-dim:#5a1515;
+    --text:#e8e8e8; --text-muted:#888; --text-dim:#555;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:'Azeret Mono',monospace; font-weight:400;
+    font-size:13px; line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+    display:flex; flex-direction:column; min-height:100vh;
+  }
+  ::selection{background:var(--accent); color:#fff}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-track{background:var(--bg)}
+  ::-webkit-scrollbar-thumb{background:var(--accent-dim);border-radius:0}
+  ::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+
+  /* ---- grain ---- */
+  .grain{position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.035;mix-blend-mode:overlay}
+
+  button,select,input{font-family:'Azeret Mono',monospace}
+  button{cursor:pointer;user-select:none}
+  .lbl-cap{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);font-weight:500}
+
+  /* ============ TRANSPORT RAIL ============ */
+  .rail{
+    position:sticky; top:0; z-index:200;
+    display:flex; align-items:center; gap:14px 18px; flex-wrap:wrap;
+    padding:11px 20px; min-height:64px;
+    background:linear-gradient(180deg,#080808 78%,rgba(8,8,8,.94));
+    border-bottom:1px solid var(--border);
+    box-shadow:0 4px 22px -16px #000;
+  }
+  .wordmark{
+    font-family:'Bebas Neue',sans-serif; font-size:30px; line-height:.85;
+    letter-spacing:3px; color:var(--text); user-select:none; white-space:nowrap;
+  }
+  .wordmark .dot{color:var(--accent-light)}
+  .wordmark .tag{
+    display:block; font-family:'Azeret Mono',monospace; font-size:8px;
+    letter-spacing:3px; color:var(--text-dim); font-weight:300; margin-top:2px;
+  }
+  .rail .grp{display:flex;flex-direction:column;gap:4px}
+  .rail .grp .ln{display:flex;align-items:center;gap:7px}
+  .spacer{flex:1}
+
+  .btn{
+    background:var(--surface); color:var(--text); border:1px solid var(--border);
+    padding:9px 14px; font-size:11px; letter-spacing:1.5px; text-transform:uppercase;
+    transition:background .14s ease,border-color .14s ease,color .14s ease,transform .06s ease;
+  }
+  .btn:hover{background:var(--surface-hover);border-color:var(--accent-dim)}
+  .btn:active{transform:scale(.97)}
+  .btn.tiny{padding:5px 9px;font-size:10px;letter-spacing:1px}
+  .btn.play{min-width:104px;font-weight:600;border-color:var(--accent-dim)}
+  .btn.play.on{background:var(--accent);border-color:var(--accent-light);color:#fff;box-shadow:0 0 18px -4px var(--accent)}
+  .btn.warm{background:var(--accent);border-color:var(--accent-light);color:#fff;font-weight:600;box-shadow:0 0 16px -6px var(--accent)}
+  .btn.warm:hover{background:var(--accent-light);border-color:var(--accent-light)}
+  .btn.active{background:var(--accent);border-color:var(--accent-light);color:#fff}
+
+  input[type=number]{
+    background:var(--surface);color:var(--text);border:1px solid var(--border);
+    padding:7px 8px;font-size:15px;width:66px;text-align:center;font-weight:500;-moz-appearance:textfield;
+  }
+  input[type=number]:focus{outline:none;border-color:var(--accent)}
+  input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  input.ch{width:46px;font-size:13px;padding:6px}
+  input[type=text]{background:var(--surface);color:var(--text);border:1px solid var(--border);padding:7px 9px;font-size:11px;letter-spacing:.5px}
+  input[type=text]:focus{outline:none;border-color:var(--accent)}
+
+  input[type=range]{-webkit-appearance:none;appearance:none;width:118px;height:4px;background:var(--border);outline:none;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;background:var(--accent-light);border-radius:50%;box-shadow:0 0 8px -2px var(--accent)}
+  input[type=range]::-moz-range-thumb{width:14px;height:14px;background:var(--accent-light);border:none;border-radius:50%}
+  .val{font-size:11px;color:var(--accent-light);min-width:34px;text-align:right;letter-spacing:1px}
+
+  select{background:var(--surface-hover);border:1px solid var(--border);color:var(--text);padding:7px 9px;font-size:11px;outline:none;cursor:pointer;min-width:120px}
+  select:focus{border-color:var(--accent)}
+
+  /* math-style param panel */
+  .style-panel{display:flex;flex-wrap:wrap;gap:14px;background:var(--surface);border:1px solid var(--border);border-left:2px solid var(--accent);padding:12px 14px;margin-top:4px}
+  .style-panel .sp-field{display:flex;flex-direction:column;gap:5px;min-width:120px}
+  .style-panel .sp-field label{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.2px}
+  .style-panel .sp-field .sp-descr{font-size:8.5px;color:var(--text-dim);line-height:1.3;max-width:200px}
+  .style-panel input[type=number]{width:90px}
+  .style-panel select{min-width:110px}
+  .style-panel .sp-check{display:flex;align-items:center;gap:8px;cursor:pointer}
+  .style-panel .sp-check input{accent-color:var(--accent-light);width:16px;height:16px;cursor:pointer}
+  .style-panel .sp-fam{width:100%;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;font-size:13px;color:var(--accent-light);border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:2px}
+
+  .seg{display:inline-flex;border:1px solid var(--border)}
+  .seg button{border:none;border-right:1px solid var(--border);padding:7px 10px;background:var(--surface);font-size:10px;letter-spacing:1px;color:var(--text)}
+  .seg button:last-child{border-right:none}
+  .seg button.on{background:var(--accent);color:#fff}
+
+  /* MIDI chip */
+  .midi-chip{
+    display:flex;align-items:center;gap:8px;padding:7px 11px;
+    border:1px solid var(--border);background:var(--surface);font-size:10px;letter-spacing:1px;
+  }
+  .midi-chip .dot{width:8px;height:8px;border-radius:50%;background:var(--text-dim);transition:background .1s,box-shadow .1s}
+  .midi-chip.ok .dot{background:#3a8b3a}
+  .midi-chip.flash .dot{background:var(--accent-light);box-shadow:0 0 10px 1px var(--accent-light)}
+  .midi-chip.unavail{border-color:var(--accent-dim);color:var(--accent-light)}
+  .midi-chip .txt{white-space:nowrap}
+
+  /* export menu */
+  .menu-wrap{position:relative}
+  .menu{
+    position:absolute;top:calc(100% + 6px);right:0;z-index:300;
+    background:var(--surface);border:1px solid var(--accent-dim);min-width:210px;
+    box-shadow:0 12px 30px -12px #000;display:none;
+  }
+  .menu.show{display:block}
+  .menu button{display:block;width:100%;text-align:left;background:transparent;border:none;border-bottom:1px solid var(--border);padding:10px 13px;font-size:11px;letter-spacing:1px;color:var(--text)}
+  .menu button:last-child{border-bottom:none}
+  .menu button:hover{background:var(--surface-hover);color:var(--accent-light)}
+  .menu .hd{padding:8px 13px;font-size:9px;letter-spacing:2px;color:var(--text-dim);border-bottom:1px solid var(--border);text-transform:uppercase}
+
+  /* ============ WORKBENCH ============ */
+  .workbench{flex:1;display:flex;flex-direction:column;padding:16px 20px 8px;position:relative;z-index:1}
+  .section-head{display:flex;align-items:center;gap:10px;margin:2px 0 8px}
+  .section-head h2{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:2px;color:var(--text-muted);font-weight:400}
+  .section-head .meta{font-size:9px;letter-spacing:1px;color:var(--text-dim)}
+  .section-head .sp{flex:1}
+  .section-head .legend{display:flex;align-items:center;gap:12px;font-size:8px;letter-spacing:1px;color:var(--text-dim);text-transform:uppercase}
+  .section-head .legend .lg{display:flex;align-items:center;gap:5px}
+  .section-head .legend .sw{width:11px;height:11px;display:inline-block;border:1px solid var(--border)}
+  .section-head .legend .sw.l1{background:var(--accent)}
+  .section-head .legend .sw.l2{background:var(--accent-light);box-shadow:inset 0 0 6px -1px #ff5a5a}
+  .section-head .legend .sw.l3{background:var(--accent-dim)}
+  .live-badge{font-size:9px;letter-spacing:1px;color:var(--accent-light);border:1px solid var(--accent-dim);padding:2px 8px;display:none}
+  .live-badge.show{display:inline-block}
+  .live-badge::before{content:"● ";color:var(--accent-light)}
+
+  /* grids share a left gutter width */
+  .grid-pane{position:relative;border:1px solid var(--border);background:var(--surface);overflow:hidden}
+  /* the unified playhead column */
+  .playhead{
+    position:absolute;top:0;bottom:0;width:2px;background:var(--accent-light);
+    box-shadow:0 0 14px -1px var(--accent-light), inset 0 0 14px -3px var(--accent-light);
+    pointer-events:none;z-index:20;opacity:0;transition:opacity .12s;
+  }
+  .playhead.on{opacity:.92}
+
+  /* shared step ruler */
+  .ruler{display:flex;border-bottom:1px solid var(--border)}
+  .ruler .gutter{flex:0 0 var(--gutter,212px);border-right:1px solid var(--border);background:#0a0a0a}
+  .ruler .ticks{flex:1;display:flex;min-width:0}
+  .ruler .tk{flex:1 1 0;min-width:18px;text-align:center;font-size:8px;color:var(--text-dim);padding:4px 0}
+  .ruler .tk.db{color:var(--accent-light);font-weight:600}
+
+  /* DRUM grid */
+  .drow{display:flex;align-items:stretch;border-bottom:1px solid var(--border)}
+  .drow:last-child{border-bottom:none}
+  .voice{flex:0 0 var(--gutter,212px);display:flex;align-items:center;gap:6px;padding:5px 9px;background:#0a0a0a;border-right:1px solid var(--border)}
+  .voice .vn{flex:1;min-width:0;line-height:1.05}
+  .voice .vn .nm{font-size:11px;letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;cursor:pointer}
+  .voice .vn .nm:hover{color:var(--accent-light)}
+  .voice .vn .gm{font-size:8px;color:var(--text-dim);letter-spacing:1px}
+  .voice .vb{display:flex;gap:3px}
+  .mini{background:transparent;border:1px solid var(--border);color:var(--text-muted);width:21px;height:21px;font-size:9px;padding:0;display:flex;align-items:center;justify-content:center}
+  .mini:hover{border-color:var(--accent-dim);color:var(--text)}
+  .mini.m{background:var(--text-dim);color:#000;border-color:var(--text-dim)}
+  .mini.s{background:var(--accent-light);color:#fff;border-color:var(--accent-light)}
+  .dsteps{flex:1;display:flex;min-width:0}
+  .cell{flex:1 1 0;min-width:18px;height:34px;background:var(--surface);border-right:1px solid var(--border);position:relative;transition:background .07s}
+  .cell:hover{background:var(--surface-hover)}
+  .cell.beat{border-right:1px solid #242424}
+  .cell.bar{border-right:2px solid #3a2020}
+  .cell.l1{background:var(--accent)}
+  .cell.l2{background:var(--accent-light);box-shadow:inset 0 0 10px -2px #ff5a5a}
+  .cell.l3{background:var(--accent-dim)}
+  .cell.l1::after,.cell.l2::after,.cell.l3::after{content:"";position:absolute;inset:4px;border:1px solid rgba(255,255,255,.06);pointer-events:none}
+  /* current-step column highlight — mirrors the arp .cur so you feel the clock on the primary grid */
+  .cell.cur{box-shadow:inset 0 0 0 1px var(--accent-light), inset 0 0 14px -4px var(--accent-light)}
+
+  /* ARP editor */
+  .arp-pane{margin-top:14px}
+  .arp-toggle{cursor:pointer;display:flex;align-items:center;gap:8px}
+  .arp-toggle .caret{transition:transform .14s;color:var(--accent-light)}
+  .arp-pane.collapsed .caret{transform:rotate(-90deg)}
+  .arp-body{display:block}
+  .arp-pane.collapsed .arp-body{display:none}
+  .arp-collapsed-strip{display:none;height:54px;border:1px solid var(--border);background:#000;position:relative;overflow:hidden}
+  .arp-pane.collapsed .arp-collapsed-strip{display:block}
+
+  .arp-controls{display:flex;flex-wrap:wrap;gap:14px 18px;align-items:flex-end;padding:12px;border:1px solid var(--border);background:var(--surface);margin-bottom:12px}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.4px}
+  .note-chips{display:flex;flex-wrap:wrap;gap:4px;max-width:300px}
+  .nchip{background:var(--surface-hover);border:1px solid var(--border);color:var(--text-muted);padding:5px 8px;font-size:10px;cursor:pointer;min-width:30px;text-align:center;transition:all .12s}
+  .nchip:hover{color:var(--text);border-color:var(--accent-dim)}
+  .nchip.on{background:var(--accent);border-color:var(--accent-light);color:#fff}
+  .slider-field{min-width:140px}
+  .slider-head{display:flex;justify-content:space-between;align-items:baseline}
+  .slider-head .val{min-width:auto}
+
+  /* keyboard */
+  .keyboard{position:relative;height:78px;border:1px solid var(--border);background:#000;overflow:hidden;user-select:none;margin-top:4px}
+  .key{position:absolute;top:0;cursor:pointer;transition:background .08s}
+  .key.white{background:#1c1c1c;border-right:1px solid #000;height:100%;z-index:1}
+  .key.white:hover{background:#262626}
+  .key.white.held{background:var(--accent-dim)}
+  .key.white.held:hover{background:var(--accent)}
+  .key.black{background:#0a0a0a;height:60%;z-index:2}
+  .key.black:hover{background:#1a1a1a}
+  .key.black.held{background:var(--accent)}
+  .key.chord{box-shadow:inset 0 -4px 0 var(--accent-light)}
+  .key .kl{position:absolute;bottom:3px;left:0;right:0;text-align:center;font-size:7px;color:var(--text-dim);pointer-events:none}
+
+  /* bar nav + lanes */
+  .bar-nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:12px 0 8px}
+  .bar-nav .bn{border:1px solid var(--border);background:var(--surface);color:var(--text-muted);padding:5px 9px;font-size:10px;letter-spacing:1px;min-width:30px}
+  .bar-nav .bn.on{background:var(--accent);border-color:var(--accent-light);color:#fff}
+  .bar-nav .bn:hover{border-color:var(--accent-dim);color:var(--text)}
+  .bar-nav .sp{flex:1}
+
+  .lane-label{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.4px;margin:10px 0 6px;display:flex;justify-content:space-between;align-items:center}
+  .lane-label .hint{color:var(--text-dim);text-transform:none;letter-spacing:0}
+  .lane{display:flex;gap:3px;min-width:max-content}
+  .tcell{width:26px;height:26px;border:1px solid var(--border);background:var(--surface-hover);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text-dim);cursor:pointer;transition:all .1s}
+  .tcell.on{background:var(--accent-dim);border-color:var(--accent);color:#fff}
+  .tcell.on:hover{background:var(--accent)}
+  .tcell.beat{border-bottom:2px solid var(--accent-dim)}
+  .tcell.cur{box-shadow:0 0 12px var(--accent-light);border-color:var(--accent-light)}
+  .vcell{width:26px;height:62px;border:1px solid var(--border);background:#000;position:relative;cursor:ns-resize;overflow:hidden}
+  .vcell .fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,var(--accent-light),var(--accent-dim))}
+  .vcell .vn2{position:absolute;top:2px;left:0;right:0;text-align:center;font-size:7px;color:var(--text-muted);pointer-events:none}
+  .vcell.cur{box-shadow:0 0 12px var(--accent-light);border-color:var(--accent-light)}
+  .lane-scroll{overflow-x:auto;padding-bottom:6px}
+
+  /* mini piano-roll viz (expanded + collapsed strip) */
+  .viz-wrap{border:1px solid var(--border);background:#000;margin-top:12px}
+  #roll{display:block;width:100%;height:150px}
+  #stripRoll{display:block;width:100%;height:54px}
+  /* shared left gutter so the arp accent column sits at the SAME fractional x as the drum
+     playhead on bar 1 — the headline "one clock" visual proof. The roll content (canvas)
+     starts after the gutter, mirroring the drum grid's voice column. */
+  #rollPane{padding-left:var(--gutter,212px)}
+  #rollPane .viz-wrap{margin-top:0}
+  #arpStripPane{padding-left:var(--gutter,212px)}
+  .gutter-tag{position:absolute;left:0;top:0;bottom:0;width:var(--gutter,212px);background:#0a0a0a;border-right:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:8px;letter-spacing:2px;color:var(--text-dim);z-index:5;pointer-events:none}
+
+  /* ============ LAUNCHER DOCK ============ */
+  .dock{
+    position:sticky; bottom:0; z-index:150;
+    display:flex; gap:16px; align-items:stretch;
+    padding:12px 20px; min-height:152px;
+    background:linear-gradient(0deg,#080808 78%,rgba(8,8,8,.92));
+    border-top:1px solid var(--border);
+    box-shadow:0 -4px 22px -16px #000;
+    overflow-x:auto;
+  }
+  .dock-col{display:flex;flex-direction:column;gap:6px;flex:0 0 auto}
+  .dock-col .ch{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);font-weight:500;display:flex;align-items:center;gap:8px}
+  .dock-col .ch .x{flex:1}
+  .pads{display:flex;gap:7px;flex-wrap:nowrap}
+  .pads.col{flex-direction:column;max-height:104px;flex-wrap:wrap;align-content:flex-start}
+
+  .pad{
+    position:relative;width:74px;height:46px;border:1px solid var(--border);background:var(--surface);
+    display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;
+    cursor:pointer;transition:border-color .12s,background .12s,box-shadow .12s;overflow:hidden;
+  }
+  .pad:hover{border-color:var(--accent-dim);background:var(--surface-hover)}
+  .pad .pn{font-size:10px;letter-spacing:.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:64px;z-index:3}
+  .pad .pm{font-size:8px;color:var(--text-dim);z-index:3}
+  .pad .key-h{position:absolute;top:2px;left:3px;font-size:7px;color:var(--text-dim);z-index:3}
+  .pad.scene{width:118px;height:46px}
+  .pad.empty{border-style:dashed;color:var(--text-dim)}
+  .pad.empty .pn{color:var(--text-dim)}
+  /* QUEUED */
+  .pad.queued{border-color:var(--accent-light);animation:padpulse 1s ease-in-out infinite}
+  @keyframes padpulse{0%,100%{box-shadow:0 0 0 0 rgba(184,48,48,.0)}50%{box-shadow:0 0 16px -2px var(--accent-light)}}
+  /* PLAYING */
+  .pad.playing{background:var(--accent);border-color:var(--accent-light);box-shadow:inset 0 0 16px -3px var(--accent-light)}
+  .pad.playing .pn,.pad.playing .pm{color:#fff}
+  /* STOPPING */
+  .pad.stopping{animation:padfade 1s ease-in-out infinite}
+  @keyframes padfade{0%,100%{opacity:1}50%{opacity:.45}}
+  .pad .stopx{position:absolute;top:2px;right:4px;font-size:10px;color:#fff;z-index:3;display:none}
+  .pad.stopping .stopx{display:block}
+  /* countdown ring */
+  .pad .ring{position:absolute;inset:0;pointer-events:none;z-index:2}
+  .pad .ring circle{fill:none;stroke:var(--accent-light);stroke-width:2;opacity:.85}
+  .pad .colorbar{position:absolute;top:0;left:0;right:0;height:4px;z-index:3;opacity:.9}
+
+  .add-pad{width:46px;height:46px;border:1px dashed var(--border);background:transparent;color:var(--text-dim);font-size:18px;display:flex;align-items:center;justify-content:center}
+  .add-pad:hover{border-color:var(--accent);color:var(--accent-light)}
+
+  .capture-col{justify-content:center}
+  .capture-btn{
+    width:118px;height:104px;border:1px solid var(--accent-dim);background:linear-gradient(180deg,var(--surface-hover),var(--surface));
+    color:var(--accent-light);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  }
+  .capture-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent-light);box-shadow:0 0 22px -6px var(--accent)}
+  .capture-btn .big{font-size:26px;line-height:1}
+  .capture-btn .lb{font-size:10px;letter-spacing:1.5px}
+
+  /* ============ misc ============ */
+  .toast{position:fixed;bottom:170px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface);border:1px solid var(--accent-dim);color:var(--text);padding:10px 18px;font-size:11px;letter-spacing:1px;z-index:10000;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;box-shadow:0 0 24px -10px var(--accent)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .missing{padding:60px 30px;text-align:center;color:var(--text-muted);line-height:1.9}
+  .missing h1{font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:3px;color:var(--accent-light);margin-bottom:14px}
+  .missing code{background:var(--surface);border:1px solid var(--border);padding:2px 7px;color:var(--accent-light)}
+
+  kbd{background:var(--surface);border:1px solid var(--border);padding:1px 6px;color:var(--text-muted);font-family:'Azeret Mono',monospace;font-size:10px}
+  .hidden{display:none !important}
+</style>
+</head>
+<body>
+
+<!-- grain -->
+<svg class="grain" xmlns="http://www.w3.org/2000/svg">
+  <filter id="grainFilter"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/></filter>
+  <rect width="100%" height="100%" filter="url(#grainFilter)"/>
+</svg>
+
+<!-- fallback if core missing -->
+<div id="missing" class="missing hidden">
+  <h1>FIRESTARTER · ENGINE NOT FOUND</h1>
+  <p><code>firestarter-core.js</code> failed to load.</p>
+  <p>Keep <code>firestarter-core.js</code> in the same folder as this file and reload.</p>
+</div>
+
+<div id="app">
+
+  <!-- ============ TRANSPORT RAIL ============ -->
+  <div class="rail" id="rail">
+    <div class="wordmark">FIRESTARTER<span class="dot">·</span><span class="tag">ONE CLOCK · TWO ENGINES</span></div>
+
+    <div class="grp">
+      <span class="lbl-cap">Transport</span>
+      <div class="ln">
+        <button class="btn play" id="playBtn">▶ PLAY</button>
+      </div>
+    </div>
+
+    <div class="grp">
+      <span class="lbl-cap">Tempo</span>
+      <div class="ln">
+        <input type="number" id="bpm" min="40" max="300" value="148">
+        <span class="lbl-cap" id="position" style="letter-spacing:1px">1.1.1</span>
+      </div>
+    </div>
+
+    <div class="grp">
+      <span class="lbl-cap">Swing</span>
+      <div class="ln">
+        <input type="range" id="swing" min="0" max="70" value="0">
+        <span class="val" id="swingVal">0%</span>
+      </div>
+    </div>
+
+    <div class="grp">
+      <span class="lbl-cap">Launch Quant</span>
+      <div class="ln">
+        <div class="seg" id="quantSeg">
+          <button data-q="instant">INST</button>
+          <button data-q="1">1</button>
+          <button data-q="2">2</button>
+          <button data-q="4" class="on">4</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="grp">
+      <span class="lbl-cap">Ableton MIDI</span>
+      <div class="ln">
+        <div class="midi-chip" id="midiChip"><span class="dot"></span><span class="txt">OFF</span></div>
+        <button class="btn tiny" id="enableMidi">ENABLE MIDI</button>
+        <select id="midiOut"><option value="">— no output —</option></select>
+        <span class="lbl-cap">DRUM</span><input type="number" class="ch" id="drumCh" min="1" max="16" value="10">
+        <span class="lbl-cap">ARP</span><input type="number" class="ch" id="arpCh" min="1" max="16" value="1">
+        <button class="btn tiny active" id="clockToggle" title="App as MIDI clock master">CLOCK</button>
+      </div>
+    </div>
+
+    <div class="grp">
+      <span class="lbl-cap">Project</span>
+      <div class="ln">
+        <div class="menu-wrap">
+          <button class="btn warm" id="exportBtn">↓ EXPORT ▾</button>
+          <div class="menu" id="exportMenu">
+            <div class="hd">MIDI · drag into Ableton</div>
+            <button data-ex="drums">↓ Drum pattern (.mid)</button>
+            <button data-ex="arp">↓ Arp clip (.mid)</button>
+            <button data-ex="scene">↓ Scene combined (.mid)</button>
+            <div class="hd">Project</div>
+            <button data-ex="json">↓ Save project (.json)</button>
+            <button data-ex="import">↑ Load project (.json)</button>
+          </div>
+        </div>
+        <input type="file" id="importFile" accept="application/json,.json" class="hidden">
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ WORKBENCH ============ -->
+  <div class="workbench">
+
+    <!-- DRUMS -->
+    <div class="section-head">
+      <h2>DRUMS</h2>
+      <span class="meta" id="drumMeta">CH 10 · GM</span>
+      <span class="live-badge" id="drumLiveBadge" title="The dock clip currently loaded in this editor"></span>
+      <span class="legend">
+        <span class="lg"><i class="sw l1"></i>normal</span>
+        <span class="lg"><i class="sw l2"></i>accent</span>
+        <span class="lg"><i class="sw l3"></i>ghost</span>
+        <span class="lg">click cycles 1→2→3→off</span>
+      </span>
+      <span class="sp"></span>
+      <span class="lbl-cap">Bars</span>
+      <div class="seg" id="drumBarsSeg">
+        <button data-b="1">1</button>
+        <button data-b="2">2</button>
+        <button data-b="4" class="on">4</button>
+        <button data-b="8">8</button>
+      </div>
+    </div>
+
+    <div class="grid-pane" id="drumPane">
+      <div class="playhead" id="drumPlayhead"></div>
+      <div class="lane-scroll">
+        <div class="ruler" id="drumRuler">
+          <div class="gutter"></div>
+          <div class="ticks" id="drumTicks"></div>
+        </div>
+        <div id="drumRows"></div>
+      </div>
+    </div>
+
+    <!-- ARP -->
+    <div class="arp-pane" id="arpPane">
+      <div class="section-head">
+        <h2 class="arp-toggle" id="arpToggle"><span class="caret">▾</span> ARPEGGIATOR</h2>
+        <span class="meta" id="arpMeta">CH 1</span>
+        <span class="live-badge" id="arpLiveBadge" title="The dock clip currently loaded in this editor"></span>
+        <span class="sp"></span>
+        <span class="lbl-cap">Clip Length</span>
+        <select id="arpLen"></select>
+      </div>
+
+      <!-- collapsed strip -->
+      <div class="grid-pane arp-collapsed-strip" id="arpStripPane">
+        <div class="gutter-tag">ARP</div>
+        <div class="playhead" id="stripPlayhead"></div>
+        <div class="viz-wrap" style="border:none;margin:0"><canvas id="stripRoll"></canvas></div>
+      </div>
+
+      <!-- expanded body -->
+      <div class="arp-body">
+        <div class="arp-controls">
+          <div class="field" style="min-width:220px">
+            <label>Root</label>
+            <div class="note-chips" id="rootChips"></div>
+          </div>
+          <div class="field"><label>Chord</label><select id="chordType"></select></div>
+          <div class="field"><label>Octaves</label>
+            <select id="octaves"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+          </div>
+          <div class="field"><label>Mode</label>
+            <select id="mode">
+              <option value="up">Up</option><option value="down">Down</option>
+              <option value="updown">Up-Down</option><option value="downup">Down-Up</option>
+              <option value="converge">Converge</option><option value="diverge">Diverge</option>
+              <option value="asplayed">As-Played</option><option value="random">Random</option>
+              <option value="chord">Chord</option>
+            </select>
+          </div>
+          <div class="field" id="styleParamsField" style="display:none;flex:1 1 100%;min-width:100%">
+            <label id="styleParamsLabel">Style Params</label>
+            <div class="style-panel" id="styleParams"></div>
+          </div>
+          <div class="field"><label>Rate</label>
+            <select id="rate">
+              <option value="1/4">1/4</option><option value="1/4.">1/4.</option>
+              <option value="1/8">1/8</option><option value="1/8.">1/8.</option><option value="1/8T">1/8T</option>
+              <option value="1/16" selected>1/16</option><option value="1/16.">1/16.</option><option value="1/16T">1/16T</option>
+              <option value="1/32">1/32</option>
+            </select>
+          </div>
+          <div class="field"><label>Hold</label><button class="btn" id="holdBtn">OFF</button></div>
+          <div class="field slider-field">
+            <div class="slider-head"><label>Gate</label><span class="val" id="gateVal">80%</span></div>
+            <input type="range" id="gate" min="5" max="100" value="80">
+          </div>
+          <div class="field slider-field">
+            <div class="slider-head"><label>Cutoff</label><span class="val" id="cutoffVal">2200</span></div>
+            <input type="range" id="cutoff" min="180" max="9000" value="2200">
+          </div>
+          <div class="field">
+            <label>Keys override</label>
+            <button class="btn tiny" id="clearKeys">CLEAR KEYS</button>
+          </div>
+        </div>
+
+        <div class="keyboard" id="keyboard"></div>
+
+        <div class="bar-nav" id="barNav"></div>
+
+        <div class="lane-scroll">
+          <div class="lane-label"><span>Gate lane <span class="hint">· click to rest/activate</span></span></div>
+          <div class="lane" id="gateLane"></div>
+          <div class="lane-label"><span>Velocity lane <span class="hint">· drag up/down</span></span></div>
+          <div class="lane" id="velLane"></div>
+        </div>
+
+        <div class="grid-pane viz-wrap" id="rollPane" style="position:relative">
+          <div class="gutter-tag">ARP ROLL</div>
+          <div class="playhead" id="rollPlayhead"></div>
+          <canvas id="roll"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ LAUNCHER DOCK ============ -->
+  <div class="dock" id="dock">
+    <div class="dock-col">
+      <div class="ch">SCENES <span class="x"></span><span class="lbl-cap">1–8</span></div>
+      <div class="pads" id="scenePads"></div>
+    </div>
+
+    <div class="dock-col capture-col">
+      <div class="ch">CAPTURE</div>
+      <button class="capture-btn" id="captureBtn"><span class="big">⚡</span><span class="lb">→ SCENE</span></button>
+    </div>
+
+    <div class="dock-col">
+      <div class="ch">DRUM CLIPS <span class="x"></span><span class="lbl-cap">Q–I</span></div>
+      <div class="pads" id="drumClipPads"></div>
+    </div>
+
+    <div class="dock-col">
+      <div class="ch">ARP CLIPS <span class="x"></span><span class="lbl-cap">A–K</span></div>
+      <div class="pads" id="arpClipPads"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- MATH ARP STYLES (shared, load BEFORE engine) -->
+<script src="arp-styles.js"></script>
+<!-- THE ENGINE -->
+<script src="firestarter-core.js"></script>
+
+<!-- THE UI -->
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- guard: engine present? ---------- */
+  if (typeof window.FIRESTARTER === 'undefined') {
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('missing').classList.remove('hidden');
+    console.error('[firestarter-ui] window.FIRESTARTER not found — is firestarter-core.js next to this file?');
+    return;
+  }
+  var FS = window.FIRESTARTER;
+  var $ = function(id){ return document.getElementById(id); };
+
+  /* call-guard so a missing core method never silently no-ops without a trace.
+     Walks the dotted path, keeping the parent object as `this` for the call. */
+  function call(path, args){
+    var parts = path.split('.');
+    var ctx = FS, fn = FS;
+    for (var i=0;i<parts.length;i++){
+      if (fn == null) break;
+      ctx = fn;            // parent of the next hop = receiver for the final method
+      fn = fn[parts[i]];
+    }
+    if (typeof fn !== 'function'){
+      console.error('[firestarter-ui] core method missing: FIRESTARTER.'+path);
+      // surface core/UI version skew without needing devtools open
+      try { toast('Engine method missing: '+path+' — update firestarter-core.js'); } catch(_){}
+      return undefined;
+    }
+    return fn.apply(ctx, args||[]);
+  }
+
+  /* ---------- boot the engine ---------- */
+  try { FS.init({ bpm:148, swing:0, drumCh:9, arpCh:0 }); }
+  catch(e){ console.error('[firestarter-ui] init failed', e); }
+
+  /* ====================================================================
+     1. TRANSPORT RAIL
+     ==================================================================== */
+  var playBtn = $('playBtn');
+  function isPlaying(){ try { return !!FS.clock.isPlaying(); } catch(e){ return false; } }
+  function syncPlayBtn(){
+    var p = isPlaying();
+    playBtn.classList.toggle('on', p);
+    playBtn.textContent = p ? '■ STOP' : '▶ PLAY';
+  }
+  function toggleTransport(){
+    if (isPlaying()) { call('clock.stop'); }
+    else { call('clock.start'); }
+    syncPlayBtn();
+  }
+  playBtn.onclick = toggleTransport;
+
+  // BPM
+  var bpmEl = $('bpm');
+  try { bpmEl.value = FS.clock.getBpm(); } catch(e){}
+  bpmEl.addEventListener('change', function(){
+    var v = Math.max(40, Math.min(300, parseInt(bpmEl.value,10) || 148));
+    bpmEl.value = v; call('clock.setBpm', [v]);
+  });
+
+  // Swing
+  var swingEl = $('swing'), swingVal = $('swingVal');
+  try { swingEl.value = FS.getSwing(); swingVal.textContent = FS.getSwing()+'%'; } catch(e){}
+  swingEl.addEventListener('input', function(){
+    swingVal.textContent = swingEl.value+'%'; call('setSwing', [parseInt(swingEl.value,10)]);
+  });
+
+  // Launch quant
+  $('quantSeg').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    $('quantSeg').querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); });
+    b.classList.add('on');
+    var q = b.dataset.q; if (q !== 'instant') q = parseInt(q,10);
+    call('setLaunchQuant', [q]);
+  });
+
+  // MIDI channels
+  $('drumCh').addEventListener('change', function(){
+    var v = Math.max(1, Math.min(16, parseInt(this.value,10)||10)); this.value=v;
+    call('midi.setChannels', [{ drumCh: v-1 }]);
+    $('drumMeta').textContent = 'CH '+v+' · GM';
+  });
+  $('arpCh').addEventListener('change', function(){
+    var v = Math.max(1, Math.min(16, parseInt(this.value,10)||1)); this.value=v;
+    call('midi.setChannels', [{ arpCh: v-1 }]);
+    $('arpMeta').textContent = 'CH '+v;
+  });
+
+  // Clock toggle
+  var clockOn = true;
+  $('clockToggle').onclick = function(){
+    clockOn = !clockOn; this.classList.toggle('active', clockOn);
+    call('midi.setClockEnabled', [clockOn]);
+  };
+
+  /* ----- ENABLE MIDI (user gesture) ----- */
+  $('enableMidi').onclick = function(){
+    var btn = this; btn.textContent = '…';
+    Promise.resolve(call('midi.enable')).then(function(res){
+      refreshMidiOutputs();
+      refreshMidiChip();
+      btn.textContent = (res && res.ok) ? 'MIDI ✓' : 'MIDI ✕';
+      if (res && res.ok) { btn.classList.add('active'); toast('MIDI enabled — pick the IAC Bus output'); }
+      else { toast('MIDI unavailable — use Chrome. Synth + export still work.'); }
+    }).catch(function(){
+      refreshMidiChip(); btn.textContent='MIDI ✕';
+      toast('MIDI unavailable — use Chrome. Synth + export still work.');
+    });
+  };
+
+  function refreshMidiOutputs(){
+    var sel = $('midiOut'); var outs = [];
+    try { outs = FS.midi.outputs() || []; } catch(e){}
+    sel.innerHTML = '';
+    if (!outs.length){ var o=document.createElement('option'); o.value=''; o.textContent='— no output —'; sel.appendChild(o); return; }
+    var iacId = null;
+    outs.forEach(function(out){
+      var op=document.createElement('option'); op.value=out.id; op.textContent=out.name; sel.appendChild(op);
+      if (!iacId && /IAC/i.test(out.name)) iacId = out.id;
+    });
+    if (iacId){ sel.value = iacId; call('midi.selectOutput',[iacId]); }
+  }
+  $('midiOut').addEventListener('change', function(){
+    if (this.value){ call('midi.selectOutput', [this.value]); refreshMidiChip(); }
+  });
+
+  function refreshMidiChip(){
+    var chip = $('midiChip'); var txt = chip.querySelector('.txt');
+    var st = {};
+    try { st = FS.midi.status() || {}; } catch(e){}
+    chip.classList.remove('ok','unavail');
+    if (st.available === false){ chip.classList.add('unavail'); txt.textContent='MIDI UNAVAILABLE'; return; }
+    if (st.ready){ chip.classList.add('ok'); txt.textContent = (st.outName ? st.outName : 'READY'); }
+    else if (st.enabled){ txt.textContent='SELECT OUTPUT'; }
+    else { txt.textContent='OFF'; }
+  }
+
+  /* ----- EXPORT menu ----- */
+  var exportMenu = $('exportMenu');
+  $('exportBtn').onclick = function(e){ e.stopPropagation(); exportMenu.classList.toggle('show'); };
+  document.addEventListener('click', function(){ exportMenu.classList.remove('show'); });
+  exportMenu.addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    var ex = b.dataset.ex; exportMenu.classList.remove('show');
+    if (ex === 'drums') doMidiDownload('drums', 'emitr-firestarter-drums.mid');
+    else if (ex === 'arp') doMidiDownload('arp', 'emitr-firestarter-arp.mid');
+    else if (ex === 'scene') doMidiDownload('scene', 'emitr-firestarter-scene.mid');
+    else if (ex === 'json') downloadText(call('persist.exportJSON')||'{}', 'emitr-firestarter-project.json', 'application/json');
+    else if (ex === 'import') $('importFile').click();
+  });
+  function doMidiDownload(kind, fname){
+    var bytes;
+    try { bytes = FS['export'][kind](); } catch(e){ console.error(e); }
+    if (!bytes || !bytes.length){ toast('Nothing to export — '+kind+' is empty'); return; }
+    var blob = new Blob([bytes], { type:'audio/midi' });
+    triggerDownload(blob, fname); toast('MIDI exported → drag into Ableton');
+  }
+  function downloadText(txt, fname, mime){
+    triggerDownload(new Blob([txt], { type: mime }), fname); toast('Saved '+fname);
+  }
+  function triggerDownload(blob, fname){
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a'); a.href=url; a.download=fname;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  }
+  $('importFile').addEventListener('change', function(e){
+    var f = e.target.files && e.target.files[0]; if(!f) return;
+    var r = new FileReader();
+    r.onload = function(){
+      try { call('persist.importJSON', [r.result]); fullRefresh(); toast('Project loaded'); }
+      catch(err){ toast('Could not load project'); }
+    };
+    r.readAsText(f); e.target.value='';
+  });
+
+  /* ====================================================================
+     2. DRUM GRID
+     ==================================================================== */
+  var DRUM_LEVEL_CLASS = { 1:'l1', 2:'l2', 3:'l3' };  // normal / accent / ghost
+  var CYCLE = { 0:1, 1:2, 2:3, 3:0 };
+  var drumVoices = [];
+  try { drumVoices = FS.drums.getVoices() || []; } catch(e){}
+
+  function drumState(){ try { return FS.drums.getPattern() || {}; } catch(e){ return {}; } }
+
+  function renderDrumRuler(steps){
+    var ticks = $('drumTicks'); ticks.innerHTML='';
+    for (var i=0;i<steps;i++){
+      var t=document.createElement('div'); t.className='tk';
+      if (i%4===0){ t.classList.add('db'); t.textContent = (Math.floor(i/4)+1); }
+      else t.textContent='·';
+      ticks.appendChild(t);
+    }
+  }
+
+  function renderDrums(){
+    var st = drumState();
+    var steps = st.steps || 16;
+    var pattern = st.pattern || {};
+    var mute = st.mute || {}, solo = st.solo || {};
+    renderDrumRuler(steps);
+    var rows = $('drumRows'); rows.innerHTML='';
+
+    drumVoices.forEach(function(v){
+      var row = document.createElement('div'); row.className='drow'; row.dataset.voice=v.id;
+
+      var voice = document.createElement('div'); voice.className='voice';
+      var vn = document.createElement('div'); vn.className='vn';
+      var nm = document.createElement('span'); nm.className='nm'; nm.textContent=v.name; nm.title='Audition';
+      nm.onclick = function(){ call('drums.audition', [v.id]); };
+      var gm = document.createElement('span'); gm.className='gm'; gm.textContent='GM '+v.note;
+      vn.appendChild(nm); vn.appendChild(gm); voice.appendChild(vn);
+
+      var vb = document.createElement('div'); vb.className='vb';
+      var mBtn=document.createElement('button'); mBtn.className='mini'+(mute[v.id]?' m':''); mBtn.textContent='M'; mBtn.title='Mute';
+      mBtn.onclick=function(){ var on=!mBtn.classList.contains('m'); call('drums.setMuteSolo',[v.id,'mute',on]); mBtn.classList.toggle('m',on); };
+      var sBtn=document.createElement('button'); sBtn.className='mini'+(solo[v.id]?' s':''); sBtn.textContent='S'; sBtn.title='Solo';
+      sBtn.onclick=function(){ var on=!sBtn.classList.contains('s'); call('drums.setMuteSolo',[v.id,'solo',on]); sBtn.classList.toggle('s',on); };
+      vb.appendChild(mBtn); vb.appendChild(sBtn); voice.appendChild(vb);
+      row.appendChild(voice);
+
+      var dsteps=document.createElement('div'); dsteps.className='dsteps';
+      var prow = pattern[v.id] || [];
+      for (var i=0;i<steps;i++){
+        var cell=document.createElement('div'); cell.className='cell'; cell.dataset.step=i; cell.dataset.voice=v.id;
+        if ((i+1)%4===0 && (i+1)%16!==0) cell.classList.add('beat');
+        if ((i+1)%16===0) cell.classList.add('bar');
+        applyDrumLevel(cell, prow[i]||0);
+        (function(cell, voiceId, step){
+          cell.onclick=function(){
+            var cur = (drumState().pattern[voiceId]||[])[step] || 0;
+            var nxt = CYCLE[cur];
+            call('drums.setCell', [voiceId, step, nxt]);
+            applyDrumLevel(cell, nxt);
+          };
+        })(cell, v.id, i);
+        dsteps.appendChild(cell);
+      }
+      row.appendChild(dsteps);
+      rows.appendChild(row);
+    });
+    invalidatePlayheadGeom();
+  }
+  function applyDrumLevel(cell, level){
+    cell.classList.remove('l1','l2','l3');
+    if (level && DRUM_LEVEL_CLASS[level]) cell.classList.add(DRUM_LEVEL_CLASS[level]);
+  }
+
+  // drum bars
+  $('drumBarsSeg').addEventListener('click', function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    $('drumBarsSeg').querySelectorAll('button').forEach(function(x){x.classList.remove('on');});
+    b.classList.add('on');
+    call('drums.setLengthBars', [parseInt(b.dataset.b,10)]);
+    renderDrums();
+  });
+
+  /* ====================================================================
+     3. ARP EDITOR
+     ==================================================================== */
+  var NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  var arpCurBar = 0;
+  var arpFollow = false;   // when false, the editor stays on the bar you're editing mid-jam
+
+  function arpClip(){ try { return FS.arp.getClip() || {}; } catch(e){ return {}; } }
+  function midiNameFull(m){ var n=NOTE_NAMES[((m%12)+12)%12]; var o=Math.floor(m/12)-1; return n+o; }
+
+  // chord types — read from engine clip's type list if exposed, else built-in label fallback
+  var CHORD_LABELS = {
+    'maj':'maj','min':'min','maj7':'maj7','m7':'m7','7':'7 (dom7)','sus2':'sus2','sus4':'sus4',
+    'dim':'dim','aug':'aug','6':'6','m6':'m6','add9':'add9','m9':'m9','maj9':'maj9','9':'9'
+  };
+  function buildChordTypes(){
+    var sel=$('chordType'); sel.innerHTML='';
+    var cur = arpClip().type || 'min';
+    Object.keys(CHORD_LABELS).forEach(function(k){
+      var o=document.createElement('option'); o.value=k; o.textContent=CHORD_LABELS[k];
+      if (k===cur) o.selected=true; sel.appendChild(o);
+    });
+  }
+
+  function buildArpLenOptions(){
+    var sel=$('arpLen'); sel.innerHTML='';
+    var cur = arpClip().lengthBars || 4;
+    for (var b=1;b<=16;b++){
+      var o=document.createElement('option'); o.value=b; o.textContent=b+(b===1?' bar':' bars');
+      if (b===cur) o.selected=true; sel.appendChild(o);
+    }
+  }
+
+  function buildRootChips(){
+    var c=$('rootChips'); c.innerHTML='';
+    var cur = arpClip().root != null ? arpClip().root : 0;
+    NOTE_NAMES.forEach(function(nm,i){
+      var b=document.createElement('div'); b.className='nchip'+(i===cur?' on':''); b.textContent=nm;
+      b.onclick=function(){ call('arp.setParam',['root',i]); refreshArp(); };
+      c.appendChild(b);
+    });
+  }
+
+  // mini keyboard (2 octaves from C4 / MIDI 60)
+  var KB_START=60, KB_OCT=2;
+  var WHITE=[0,2,4,5,7,9,11], BLACK_AFTER={0:1,2:1,5:1,7:1,9:1};
+  function buildKeyboard(){
+    var kb=$('keyboard'); kb.innerHTML='';
+    var totalWhite=7*KB_OCT, wW=100/totalWhite, wi2=0;
+    for (var o=0;o<KB_OCT;o++){
+      for (var wi=0;wi<7;wi++){
+        var semi=WHITE[wi]; var midi=KB_START+o*12+semi;
+        var wk=document.createElement('div'); wk.className='key white'; wk.style.left=(wi2*wW)+'%'; wk.style.width=wW+'%'; wk.dataset.midi=midi;
+        var lbl=document.createElement('span'); lbl.className='kl'; lbl.textContent=midiNameFull(midi); wk.appendChild(lbl);
+        (function(m){ wk.onclick=function(){ toggleCustom(m); }; })(midi);
+        kb.appendChild(wk);
+        if (BLACK_AFTER[semi]){
+          var bMidi=midi+1;
+          var bk=document.createElement('div'); bk.className='key black'; bk.style.left=(wi2*wW+wW*0.66)+'%'; bk.style.width=(wW*0.66)+'%'; bk.dataset.midi=bMidi;
+          (function(m){ bk.onclick=function(e){ e.stopPropagation(); toggleCustom(m); }; })(bMidi);
+          kb.appendChild(bk);
+        }
+        wi2++;
+      }
+    }
+    paintKeyboard();
+  }
+  function toggleCustom(midi){
+    var cn = (arpClip().customNotes || []).slice();
+    var i = cn.indexOf(midi);
+    if (i>=0) cn.splice(i,1); else cn.push(midi);
+    call('arp.setParam', ['customNotes', cn]);
+    refreshArp();
+  }
+  function paintKeyboard(){
+    var cl = arpClip(); var cn = cl.customNotes || [];
+    document.querySelectorAll('.key').forEach(function(k){
+      var m=+k.dataset.midi;
+      k.classList.toggle('held', cn.indexOf(m)>=0);
+    });
+  }
+
+  // bar nav
+  function buildBarNav(){
+    var cl=arpClip(); var bars=cl.lengthBars||1;
+    if (arpCurBar>=bars) arpCurBar=bars-1; if(arpCurBar<0) arpCurBar=0;
+    var nav=$('barNav'); nav.innerHTML='';
+    var lab=document.createElement('span'); lab.className='lbl-cap'; lab.textContent='BAR'; lab.style.marginRight='4px'; nav.appendChild(lab);
+    for (var b=0;b<bars;b++){
+      var btn=document.createElement('button'); btn.className='bn'+(b===arpCurBar?' on':''); btn.textContent=(b+1);
+      (function(bi){ btn.onclick=function(){ arpCurBar=bi; refreshArp(); }; })(b);
+      nav.appendChild(btn);
+    }
+    nav.appendChild(spacerEl());
+    var followBtn=barOpBtn(arpFollow?'FOLLOW ✓':'FOLLOW', function(){ arpFollow=!arpFollow; buildBarNav(); });
+    if (arpFollow) followBtn.classList.add('on');
+    followBtn.title='Auto page-flip the editor to the playing bar';
+    nav.appendChild(followBtn);
+    nav.appendChild(barOpBtn('DUP BAR', function(){ call('arp.duplicateBar',[arpCurBar]); refreshArp(); buildArpLenOptions(); }));
+    nav.appendChild(barOpBtn('CLEAR BAR', function(){ call('arp.clearBar',[arpCurBar]); refreshArp(); }));
+  }
+  function spacerEl(){ var s=document.createElement('span'); s.className='sp'; return s; }
+  function barOpBtn(txt, fn){ var b=document.createElement('button'); b.className='bn'; b.textContent=txt; b.onclick=fn; return b; }
+
+  // gate + velocity lanes (paginated to the current bar = 16 cells)
+  function buildLanes(){
+    var cl=arpClip();
+    var steps = cl.steps || 16;
+    var pattern = cl.pattern || [];
+    var velocities = cl.velocities || [];
+    var start = arpCurBar*16;
+    var end = Math.min(start+16, steps);
+    var gateLane=$('gateLane'), velLane=$('velLane');
+    gateLane.innerHTML=''; velLane.innerHTML='';
+    for (var i=start;i<end;i++){
+      (function(idx){
+        var t=document.createElement('div'); t.className='tcell'+(pattern[idx]?' on':'')+((idx%4===0)?' beat':''); t.textContent=(idx+1); t.dataset.idx=idx;
+        t.onclick=function(){
+          var nowOn = !t.classList.contains('on');
+          call('arp.setStep', [idx, nowOn]); t.classList.toggle('on', nowOn);
+        };
+        gateLane.appendChild(t);
+
+        var vc=document.createElement('div'); vc.className='vcell'; vc.dataset.idx=idx;
+        var fill=document.createElement('div'); fill.className='fill';
+        var vn=document.createElement('div'); vn.className='vn2';
+        vc.appendChild(fill); vc.appendChild(vn);
+        var v = velocities[idx]!=null ? velocities[idx] : 100;
+        setVel(vc, v);
+        attachVelDrag(vc, idx);
+        velLane.appendChild(vc);
+      })(i);
+    }
+  }
+  function setVel(cell, v){ cell.querySelector('.fill').style.height=(v/127*100)+'%'; cell.querySelector('.vn2').textContent=v; }
+  function attachVelDrag(cell, idx){
+    var dragging=false;
+    function setFrom(e){
+      var rect=cell.getBoundingClientRect();
+      var y=(e.touches?e.touches[0].clientY:e.clientY);
+      var frac=Math.max(0,Math.min(1, 1-((y-rect.top)/rect.height)));
+      var v=Math.max(1, Math.round(frac*127));
+      setVel(cell, v);
+      // ensure gate on when setting velocity
+      var on = (arpClip().pattern||[])[idx];
+      call('arp.setStep', [idx, on!==false ? true : true, v]);
+    }
+    cell.addEventListener('mousedown', function(e){ dragging=true; setFrom(e); e.preventDefault(); });
+    window.addEventListener('mousemove', function(e){ if(dragging) setFrom(e); });
+    window.addEventListener('mouseup', function(){ dragging=false; });
+    cell.addEventListener('touchstart', function(e){ dragging=true; setFrom(e); }, {passive:true});
+    cell.addEventListener('touchmove', function(e){ if(dragging) setFrom(e); }, {passive:true});
+    cell.addEventListener('touchend', function(){ dragging=false; });
+  }
+
+  // arp control wiring
+  $('chordType').addEventListener('change', function(){ call('arp.setParam',['type',this.value]); refreshArp(); });
+  $('octaves').addEventListener('change', function(){ call('arp.setParam',['octaves',parseInt(this.value,10)]); refreshArp(); });
+  $('mode').addEventListener('change', function(){ call('arp.setParam',['mode',this.value]); buildArpStylePanel(); refreshArp(); });
+  $('rate').addEventListener('change', function(){ call('arp.setParam',['rate',this.value]); refreshArp(); });
+  $('gate').addEventListener('input', function(){ $('gateVal').textContent=this.value+'%'; call('arp.setParam',['gate',parseInt(this.value,10)]); });
+  $('cutoff').addEventListener('input', function(){ $('cutoffVal').textContent=this.value; call('arp.setParam',['cutoff',parseInt(this.value,10)]); });
+  $('holdBtn').onclick = function(){
+    var cur = !!arpClip().hold; var nv=!cur;
+    call('arp.setParam',['hold',nv]);
+    this.textContent = nv?'ON':'OFF'; this.classList.toggle('warm', nv);
+  };
+  $('clearKeys').onclick = function(){ call('arp.setParam',['customNotes',[]]); refreshArp(); };
+  $('arpLen').addEventListener('change', function(){
+    call('arp.setLengthBars', [parseInt(this.value,10)]);
+    refreshArp();
+  });
+
+  // collapse
+  $('arpToggle').onclick = function(){
+    $('arpPane').classList.toggle('collapsed');
+    invalidatePlayheadGeom(); setupCanvases(); drawRoll();
+  };
+
+  /* ---------- math-style mode select + param panel ---------- */
+  var FAMILY_LABEL = {
+    'chaos-attractors':'CHAOS & ATTRACTORS',
+    'number-sequences':'NUMBER SEQUENCES',
+    'rhythm-automata':'RHYTHM & AUTOMATA',
+    'stochastic-structured':'STOCHASTIC-STRUCTURED'
+  };
+  var FAMILY_ORDER = ['chaos-attractors','number-sequences','rhythm-automata','stochastic-structured'];
+  function isMathMode(mode){ return !!(window.ARP_STYLES && window.ARP_STYLES[mode]); }
+
+  function populateArpModeSelect(){
+    var sel=$('mode');
+    if(!sel || !window.ARP_STYLES) return;
+    if(sel.querySelector('optgroup[data-math]')) return; // already populated
+    var styles=[]; try { styles=call('arp.getMathStyles')||[]; } catch(e){ styles=[]; }
+    if(!styles.length){ // fallback: read registry directly
+      styles=Object.keys(window.ARP_STYLES).map(function(k){var s=window.ARP_STYLES[k];return {key:s.key,label:s.label,family:s.family,params:s.params};});
+    }
+    var byFam={};
+    styles.forEach(function(s){ (byFam[s.family]=byFam[s.family]||[]).push(s); });
+    FAMILY_ORDER.forEach(function(fam){
+      if(!byFam[fam]) return;
+      var og=document.createElement('optgroup');
+      og.label=FAMILY_LABEL[fam]||fam; og.setAttribute('data-math','1');
+      byFam[fam].sort(function(a,b){return a.label.localeCompare(b.label);});
+      byFam[fam].forEach(function(s){
+        var o=document.createElement('option'); o.value=s.key; o.textContent=s.label; og.appendChild(o);
+      });
+      sel.appendChild(og);
+    });
+  }
+
+  function buildArpStylePanel(){
+    var field=$('styleParamsField'), host=$('styleParams'), lbl=$('styleParamsLabel');
+    if(!field||!host) return;
+    var cl=arpClip();
+    if(!isMathMode(cl.mode)){ field.style.display='none'; host.innerHTML=''; return; }
+    var st=window.ARP_STYLES[cl.mode];
+    field.style.display=''; lbl.textContent=st.label+' params'; host.innerHTML='';
+    var fam=document.createElement('div'); fam.className='sp-fam'; fam.textContent=(FAMILY_LABEL[st.family]||st.family); host.appendChild(fam);
+    var cur={}; try { cur=call('arp.getStyleParams')||{}; } catch(e){ cur={}; }
+    st.params.forEach(function(p){
+      var wrap=document.createElement('div'); wrap.className='sp-field';
+      if(p.type==='bool'){
+        var lab=document.createElement('label'); lab.className='sp-check';
+        var cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!cur[p.name];
+        cb.addEventListener('change',function(){ call('arp.setStyleParam',[p.name,cb.checked]); refreshArp(); });
+        var sp=document.createElement('span'); sp.textContent=(p.uiLabel||p.name);
+        lab.appendChild(cb); lab.appendChild(sp); wrap.appendChild(lab);
+      } else if(p.type==='enum'){
+        var l2=document.createElement('label'); l2.textContent=(p.uiLabel||p.name); wrap.appendChild(l2);
+        var s2=document.createElement('select');
+        (p.options||[]).forEach(function(opt){
+          var o=document.createElement('option'); o.value=opt; o.textContent=opt;
+          if(opt===cur[p.name]) o.selected=true; s2.appendChild(o);
+        });
+        s2.addEventListener('change',function(){ call('arp.setStyleParam',[p.name,s2.value]); refreshArp(); });
+        wrap.appendChild(s2);
+      } else {
+        var l3=document.createElement('label'); l3.textContent=(p.uiLabel||p.name); wrap.appendChild(l3);
+        var inp=document.createElement('input'); inp.type='number';
+        if(p.min!=null) inp.min=p.min; if(p.max!=null) inp.max=p.max;
+        inp.step=(p.type==='float')?'any':'1'; inp.value=cur[p.name];
+        inp.addEventListener('change',function(){
+          var v=(p.type==='float')?parseFloat(inp.value):parseInt(inp.value,10);
+          if(isNaN(v)) v=p.default;
+          if(p.min!=null&&v<p.min) v=p.min; if(p.max!=null&&v>p.max) v=p.max;
+          inp.value=v; call('arp.setStyleParam',[p.name,v]); refreshArp();
+        });
+        wrap.appendChild(inp);
+      }
+      if(p.descr){ var d=document.createElement('div'); d.className='sp-descr'; d.textContent=p.descr; wrap.appendChild(d); }
+      host.appendChild(wrap);
+    });
+  }
+
+  function syncArpControls(){
+    var cl=arpClip();
+    if (cl.type) $('chordType').value=cl.type;
+    if (cl.octaves) $('octaves').value=String(cl.octaves);
+    if (cl.mode) $('mode').value=cl.mode;
+    if (cl.rate) $('rate').value=cl.rate;
+    if (cl.gate!=null){ $('gate').value=cl.gate; $('gateVal').textContent=cl.gate+'%'; }
+    if (cl.cutoff!=null){ $('cutoff').value=cl.cutoff; $('cutoffVal').textContent=cl.cutoff; }
+    $('holdBtn').textContent = cl.hold?'ON':'OFF'; $('holdBtn').classList.toggle('warm', !!cl.hold);
+    if (cl.lengthBars){ $('arpLen').value=String(cl.lengthBars); }
+    buildArpStylePanel();
+  }
+
+  function refreshArp(){
+    buildRootChips();
+    paintKeyboard();
+    buildBarNav();
+    buildLanes();
+    syncArpControls();
+    drawRoll();
+  }
+
+  /* ---------- piano-roll viz (expanded + collapsed strip) ---------- */
+  var rollCanvas=$('roll'), rollCtx=null, stripCanvas=$('stripRoll'), stripCtx=null;
+  function setupCanvases(){
+    var dpr=window.devicePixelRatio||1;
+    [[rollCanvas, function(c){rollCtx=c;}], [stripCanvas, function(c){stripCtx=c;}]].forEach(function(pair){
+      var cv=pair[0]; if(!cv.clientWidth) return;
+      var rect=cv.getBoundingClientRect();
+      cv.width=rect.width*dpr; cv.height=rect.height*dpr;
+      var ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); pair[1](ctx);
+    });
+  }
+  function drawOneRoll(cv, ctx){
+    if (!ctx || !cv.clientWidth) return;
+    var w=cv.clientWidth, h=cv.clientHeight;
+    ctx.clearRect(0,0,w,h); ctx.fillStyle='#000'; ctx.fillRect(0,0,w,h);
+    var cl=arpClip(); var N=cl.steps||16; var pattern=cl.pattern||[]; var velocities=cl.velocities||[];
+    if (!N) return;
+    var colW=w/N;
+    for (var i=0;i<=N;i++){
+      ctx.strokeStyle=(i%16===0)?'rgba(139,32,32,.4)':((i%4===0)?'rgba(139,32,32,.22)':'rgba(255,255,255,.04)');
+      ctx.beginPath(); ctx.moveTo(i*colW,0); ctx.lineTo(i*colW,h); ctx.stroke();
+    }
+    // approximate a single melodic line for the viz using velocity height (engine resolves true pitches at play time)
+    for (var s=0;s<N;s++){
+      if (pattern[s]===false) continue;
+      var vel = velocities[s]!=null?velocities[s]:100;
+      var x=s*colW+1.5; var bw=Math.max(2,colW*0.7);
+      var bh=Math.max(5, (vel/127)*(h*0.8));
+      var y=h - bh - (h*0.08);
+      var inten=0.35+(vel/127)*0.65;
+      ctx.fillStyle='rgba(139,32,32,'+inten+')';
+      ctx.fillRect(x,y,bw,bh);
+      ctx.fillStyle='rgba(184,48,48,'+Math.min(1,inten+0.2)+')';
+      ctx.fillRect(x,y,bw,2);
+    }
+  }
+  function drawRoll(){
+    drawOneRoll(rollCanvas, rollCtx);
+    drawOneRoll(stripCanvas, stripCtx);
+  }
+
+  /* ====================================================================
+     4. LAUNCHER DOCK — scenes + clips
+     ==================================================================== */
+  // launch handles keyed for ring animation
+  var launchHandles = {};   // key -> { boundaryTick }  (queued LAUNCH)
+  var stopHandles   = {};   // key -> { boundaryTick }  (queued STOP)
+  var SCENE_KEYS = ['1','2','3','4','5','6','7','8'];
+  var DRUM_KEYS  = ['q','w','e','r','t','y','u','i'];
+  var ARP_KEYS   = ['a','s','d','f','g','h','j','k'];
+
+  function curQuant(){
+    var on = $('quantSeg').querySelector('button.on');
+    if (!on) return undefined;
+    var q=on.dataset.q; return q==='instant'?'instant':parseInt(q,10);
+  }
+
+  function renderScenes(){
+    var scenes=[]; try { scenes=FS.scenes.list()||[]; } catch(e){}
+    var wrap=$('scenePads'); wrap.innerHTML='';
+    scenes.forEach(function(sc, idx){
+      var pad=makePad({
+        kind:'scene', id:sc.id, name:sc.name||('SC '+(idx+1)),
+        meta:'', keyHint: idx<8?SCENE_KEYS[idx]:'', color: sc.color,
+        onFire:function(){ launchScene(sc.id); },
+        onCtx:function(e){ sceneContext(e, sc); }
+      });
+      pad.classList.add('scene');
+      wrap.appendChild(pad);
+    });
+    // add button
+    var add=document.createElement('button'); add.className='add-pad'; add.textContent='+'; add.title='Capture current jam → new scene';
+    add.onclick=function(){ call('scenes.capture'); renderScenes(); toast('Scene captured'); };
+    wrap.appendChild(add);
+  }
+
+  function renderClipRow(kind, wrapId, keys){
+    var clips=[]; try { clips=FS.clips.list([kind])||[]; } catch(e){}
+    var wrap=$(wrapId); wrap.innerHTML='';
+    clips.forEach(function(c, idx){
+      var pad=makePad({
+        kind:kind, id:c.id, name:c.name||((kind==='drum'?'D':'A')+(idx+1)),
+        meta:(c.lengthBars||1)+'b', keyHint: idx<8?keys[idx]:'',
+        onFire:function(){ launchClip(kind, c.id); },
+        onCtx:function(e){ clipContext(e, kind, c); }
+      });
+      wrap.appendChild(pad);
+    });
+    // save-current button
+    var add=document.createElement('button'); add.className='add-pad'; add.textContent='+'; add.title='Save current '+kind+' as clip';
+    add.onclick=function(){
+      if (kind==='drum') call('clips.saveDrum',[null,true]); else call('clips.saveArp',[null,true]);
+      renderClipRow(kind, wrapId, keys); toast('Clip saved');
+    };
+    wrap.appendChild(add);
+  }
+
+  function makePad(opt){
+    var pad=document.createElement('div'); pad.className='pad';
+    pad.dataset.kind=opt.kind; pad.dataset.id=opt.id;
+    if (opt.color){
+      // scene tint: a thin top stripe so PLAYING oxblood still reads clearly
+      var stripe=document.createElement('span'); stripe.className='colorbar'; stripe.style.background=opt.color; pad.appendChild(stripe);
+    }
+    if (opt.keyHint){ var kh=document.createElement('span'); kh.className='key-h'; kh.textContent=opt.keyHint.toUpperCase(); pad.appendChild(kh); }
+    var sx=document.createElement('span'); sx.className='stopx'; sx.textContent='✕'; pad.appendChild(sx);
+    var pn=document.createElement('span'); pn.className='pn'; pn.textContent=opt.name; pad.appendChild(pn);
+    if (opt.meta){ var pm=document.createElement('span'); pm.className='pm'; pm.textContent=opt.meta; pad.appendChild(pm); }
+    pad.onclick=function(){ opt.onFire(); };
+    pad.oncontextmenu=function(e){ e.preventDefault(); opt.onCtx(e); };
+    return pad;
+  }
+
+  function launchScene(id){
+    var key='scene:'+id;
+    // clicking a still-queued pad again cancels the pending launch
+    if (launchHandles[key]){ call('cancelLaunch', [launchHandles[key]]); delete launchHandles[key]; refreshPadStates(); return; }
+    var h = call('scenes.launch', [id, curQuant()]);
+    registerHandle(key, h);
+    refreshPadStates();
+  }
+  function launchClip(kind, id){
+    var key=kind+':'+id;
+    if (launchHandles[key]){ call('cancelLaunch', [launchHandles[key]]); delete launchHandles[key]; refreshPadStates(); return; }
+    var h = call('clips.launch', [kind, id, curQuant()]);
+    registerHandle(key, h);
+    refreshPadStates();
+  }
+  function registerHandle(key, h){
+    if (h && typeof h.boundaryTick==='number') launchHandles[key]=h;
+    else delete launchHandles[key]; // instant launch returns null
+  }
+
+  // context menus (simple right-click quick actions)
+  function sceneContext(e, sc){
+    quickMenu(e, [
+      ['RENAME', function(){ var nm=prompt('Scene name', sc.name||''); if(nm!=null){ call('scenes.rename',[sc.id,nm]); renderScenes(); } }],
+      ['SET COLOR ▸', function(){ colorMenu(e, sc); }],
+      ['DUPLICATE (link)', function(){ call('scenes.duplicate',[sc.id,false]); renderScenes(); }],
+      ['FORK (own clips)', function(){ call('scenes.duplicate',[sc.id,true]); renderScenes(); renderAllClips(); }],
+      ['EXPORT .mid', function(){ var b; try{b=FS['export'].scene(sc.id);}catch(_){ } if(b&&b.length){ triggerDownload(new Blob([b],{type:'audio/midi'}), 'scene-'+(sc.name||sc.id)+'.mid'); } }],
+      ['DELETE', function(){ if(confirm('Delete scene?')){ call('scenes.delete',[sc.id]); renderScenes(); } }]
+    ]);
+  }
+  function clipContext(e, kind, c){
+    quickMenu(e, [
+      ['FORK', function(){ call('clips.fork',[kind,c.id]); renderAllClips(); }],
+      ['STOP (next bar)', function(){ var h=call('clips.stop',[kind,curQuant()]); var k=kind+':'+c.id; if(h&&typeof h.boundaryTick==='number'){ stopHandles[k]=h; } else { delete stopHandles[k]; } refreshPadStates(); }],
+      ['DELETE', function(){ if(confirm('Delete clip?')){ call('clips.delete',[kind,c.id]); renderAllClips(); renderScenes(); } }]
+    ]);
+  }
+  var SCENE_COLORS=['#8b2020','#b8843c','#3c8b6a','#3c6ab8','#7a3cb8','#b83c8b','#888888',null];
+  function colorMenu(e, sc){
+    var items=SCENE_COLORS.map(function(col){
+      var label = col ? '■ '+col : '○ none';
+      return [label, function(){
+        call('scenes.save', [{ id: sc.id, color: col }]);
+        renderScenes();
+      }, col];
+    });
+    quickMenu(e, items);
+  }
+  var openMenuEl=null;
+  function quickMenu(e, items){
+    if (openMenuEl){ openMenuEl.remove(); openMenuEl=null; }
+    var m=document.createElement('div'); m.className='menu show'; m.style.position='fixed';
+    m.style.left=Math.min(e.clientX, window.innerWidth-220)+'px';
+    m.style.top=Math.min(e.clientY, window.innerHeight-200)+'px';
+    items.forEach(function(it){ var b=document.createElement('button'); b.textContent=it[0]; if(it[2]){ b.style.borderLeft='6px solid '+it[2]; } b.onclick=function(){ it[1](); m.remove(); openMenuEl=null; }; m.appendChild(b); });
+    document.body.appendChild(m); openMenuEl=m;
+    setTimeout(function(){ document.addEventListener('click', function once(){ if(openMenuEl){openMenuEl.remove();openMenuEl=null;} document.removeEventListener('click',once); }); }, 0);
+  }
+
+  function renderAllClips(){
+    renderClipRow('drum','drumClipPads',DRUM_KEYS);
+    renderClipRow('arp','arpClipPads',ARP_KEYS);
+    _lastBadge.d=_lastBadge.a=null; // clip list changed → re-resolve live-clip names
+  }
+
+  // CAPTURE
+  $('captureBtn').onclick = function(){ call('scenes.capture'); renderScenes(); toast('⚡ Jam captured → scene'); };
+
+  /* ---------- pad state machine visuals ----------
+     The full PLAYING → QUEUED-STOP → STOPPED machine, driven each frame by:
+       • launchHandles[key]  → queued LAUNCH (countdown ring) until boundary, then it's a no-op
+                               and the engine's live-id makes the pad PLAYING.
+       • stopHandles[key]    → queued STOP (stopping pulse + ✕) until boundary, then suppressed.
+       • engine snapshot     → PERSISTENT truth: a pad whose id === live drum/arp clip (and not
+                               suppressed) OR === active scene is PLAYING, frame after frame.
+     This is the headline fix: the dock no longer goes dark after a launch lands. */
+  function snap(){ try { return FS.snapshot()||{}; } catch(e){ return {}; } }
+  function refreshPadStates(){
+    var tick = 0; try { tick = FS.clock.getTick(); } catch(e){}
+    var s = snap();
+    var liveDrumId = s.liveDrumClipId, liveArpId = s.liveArpClipId, activeSceneId = s.activeSceneId;
+    var drumSup = !!s.drumSuppressed, arpSup = !!s.arpSuppressed;
+    document.querySelectorAll('.pad').forEach(function(pad){
+      var kind=pad.dataset.kind, id=pad.dataset.id;
+      var key=kind+':'+id;
+      var lh=launchHandles[key], sh=stopHandles[key];
+      pad.classList.remove('queued','playing','stopping');
+
+      // --- queued LAUNCH (countdown ring) ---
+      if (lh && typeof lh.boundaryTick==='number'){
+        if (tick < lh.boundaryTick){
+          pad.classList.add('queued');
+          updateRing(pad, lh.boundaryTick, tick);
+          return; // queued look wins
+        }
+        delete launchHandles[key]; // boundary passed — engine now owns the live state
+      } else { clearRing(pad); }
+
+      // --- queued STOP (stopping pulse + ✕) ---
+      if (sh && typeof sh.boundaryTick==='number'){
+        if (tick < sh.boundaryTick){ pad.classList.add('stopping'); return; }
+        delete stopHandles[key]; // stop landed — falls through to STOPPED (no .playing below)
+      }
+
+      // --- PERSISTENT PLAYING (read from the engine, not from a transient handle) ---
+      var playing=false;
+      if (kind==='drum') playing = (id===liveDrumId && !drumSup);
+      else if (kind==='arp') playing = (id===liveArpId && !arpSup);
+      else if (kind==='scene') playing = (id===activeSceneId);
+      if (playing) pad.classList.add('playing');
+    });
+    updateLiveBadges(liveDrumId, liveArpId);
+  }
+  // workbench halo: tell the user which pooled (dock) clip the editor is currently editing.
+  var _lastBadge={d:null,a:null};
+  function clipNameById(kind, id){
+    if (!id) return null;
+    var list=[]; try { list=FS.clips.list([kind])||[]; } catch(e){}
+    for (var i=0;i<list.length;i++){ if(list[i].id===id) return list[i].name; }
+    return null;
+  }
+  function updateLiveBadges(liveDrumId, liveArpId){
+    if (liveDrumId!==_lastBadge.d){
+      _lastBadge.d=liveDrumId;
+      var dn=clipNameById('drum', liveDrumId), b=$('drumLiveBadge');
+      if (dn){ b.textContent='EDITING · '+dn; b.classList.add('show'); } else { b.classList.remove('show'); }
+    }
+    if (liveArpId!==_lastBadge.a){
+      _lastBadge.a=liveArpId;
+      var an=clipNameById('arp', liveArpId), b2=$('arpLiveBadge');
+      if (an){ b2.textContent='EDITING · '+an; b2.classList.add('show'); } else { b2.classList.remove('show'); }
+    }
+  }
+  // countdown ring built ONCE per queued pad; only stroke-dashoffset is animated each frame.
+  function ensureRing(pad){
+    var svg=pad.querySelector('svg.ring');
+    if (svg) return svg.firstChild;
+    svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('class','ring'); svg.setAttribute('viewBox','0 0 100 60'); svg.setAttribute('preserveAspectRatio','none');
+    var rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x','1.5'); rect.setAttribute('y','1.5'); rect.setAttribute('width','97'); rect.setAttribute('height','57');
+    rect.setAttribute('fill','none'); rect.setAttribute('stroke','var(--accent-light)'); rect.setAttribute('stroke-width','2.5');
+    rect.setAttribute('pathLength','100'); rect.setAttribute('stroke-dasharray','100');
+    svg.appendChild(rect); pad.appendChild(svg);
+    return rect;
+  }
+  function clearRing(pad){ var svg=pad.querySelector('svg.ring'); if(svg) svg.remove(); }
+  function updateRing(pad, boundaryTick, tick){
+    var qb = curQuant(); var winTicks = (qb==='instant'||!qb)?384:(qb*96*4);
+    var remain = boundaryTick - tick;
+    var frac = Math.max(0, Math.min(1, remain/winTicks)); // 1 = full, drains to 0
+    ensureRing(pad).setAttribute('stroke-dashoffset', String((1-frac)*100));
+  }
+
+  /* ====================================================================
+     5. PLAYHEAD + STEP SYNC + MIDI ACTIVITY (subscriptions)
+     ==================================================================== */
+  // step lighting — both grids driven by the SAME onStep event
+  var lastDrumStep=-1, lastArpStep=-1;
+  function onStep(info){
+    if (info.is16th && info.drumStep!=null && info.drumStep>=0){
+      var ds = info.drumStep;
+      if (ds!==lastDrumStep){
+        highlightDrumStep(ds);
+        lastDrumStep=ds;
+      }
+    }
+    if (info.isArpStep || info.arpStep!=null){
+      var as = info.arpStep;
+      if (as!=null && as!==lastArpStep){
+        highlightArpCell(as);
+        lastArpStep=as;
+      }
+    }
+  }
+  // light the live drum column (one cell per voice row) — matches the arp .cur
+  function highlightDrumStep(step){
+    document.querySelectorAll('.cell.cur').forEach(function(c){ c.classList.remove('cur'); });
+    document.querySelectorAll('.cell[data-step="'+step+'"]').forEach(function(c){ c.classList.add('cur'); });
+  }
+  function highlightArpCell(globalStep){
+    document.querySelectorAll('.tcell.cur,.vcell.cur').forEach(function(c){ c.classList.remove('cur'); });
+    // auto-follow page to the playing bar — ONLY when the user opted in (no mid-jam yank)
+    var bar=Math.floor(globalStep/16);
+    if (arpFollow && bar!==arpCurBar){ arpCurBar=bar; buildBarNav(); buildLanes(); }
+    var t=document.querySelector('.tcell[data-idx="'+globalStep+'"]');
+    var v=document.querySelector('.vcell[data-idx="'+globalStep+'"]');
+    if(t)t.classList.add('cur'); if(v)v.classList.add('cur');
+  }
+
+  try { FS.clock.onStep(onStep); } catch(e){ console.warn('onStep unavailable', e); }
+
+  // playhead position + dock ring drain + position readout — rAF loop reading the clock
+  var drumPH=$('drumPlayhead'), rollPH=$('rollPlayhead'), stripPH=$('stripPlayhead');
+  function positionLoop(){
+    var playing=isPlaying();
+    drumPH.classList.toggle('on', playing);
+    rollPH.classList.toggle('on', playing);
+    stripPH.classList.toggle('on', playing);
+
+    if (!playing && lastDrumStep!==-1){
+      // transport stopped — clear the moving current-step highlights
+      document.querySelectorAll('.cell.cur,.tcell.cur,.vcell.cur').forEach(function(c){ c.classList.remove('cur'); });
+      lastDrumStep=-1; lastArpStep=-1;
+    }
+
+    if (playing){
+      var tick=0;
+      try { tick=FS.clock.getTick(); } catch(e){}
+      // drums: pattern length in ticks = steps*24
+      var dst=drumState(); var dSteps=dst.steps||16;
+      var dTotalTicks=dSteps*24;
+      var dFrac=(dTotalTicks>0)?((tick % dTotalTicks)/dTotalTicks):0;
+      placePlayhead(drumPH, $('drumPane'), $('drumTicks'), dFrac);
+
+      // arp roll: full clip length ticks = steps*ticksPerArpStep. We approximate via clip length in beats.
+      var cl=arpClip(); var aSteps=cl.steps||16;
+      // arp step length ticks: 96 * stepLengthBeats(rate); compute fraction across whole clip by mapping arpStep
+      var aFrac=arpClipFraction(tick);
+      placePlayheadFull(rollPH, $('rollPane'), aFrac, rollCanvas);
+      placePlayheadFull(stripPH, $('arpStripPane'), aFrac, stripCanvas);
+
+      // position readout (bar.beat.16th)
+      var sixteenth = Math.floor(tick/24);
+      var bar=Math.floor(sixteenth/16)+1;
+      var beat=Math.floor((sixteenth%16)/4)+1;
+      var sub=(sixteenth%4)+1;
+      $('position').textContent=bar+'.'+beat+'.'+sub;
+    }
+    // persistent pad state runs EVERY frame (even when stopped) so the dock always
+    // reflects the live clips / active scene — the dark-dock bug fix.
+    refreshPadStates();
+    // MIDI activity flash
+    flashMidi();
+    requestAnimationFrame(positionLoop);
+  }
+  function rateBeats(){
+    var r=arpClip().rate||'1/16';
+    var map={'1/4':1,'1/4.':1.5,'1/8':0.5,'1/8.':0.75,'1/8T':1/3,'1/16':0.25,'1/16.':0.375,'1/16T':1/6,'1/32':0.125};
+    return map[r]||0.25;
+  }
+  function arpClipFraction(tick){
+    var cl=arpClip(); var steps=cl.steps||16;
+    var ticksPerStep=Math.max(1, Math.round(96*rateBeats()));
+    var total=steps*ticksPerStep;
+    if (!total) return 0;
+    return (tick % total)/total;
+  }
+  /* Geometry cache: getBoundingClientRect is layout-thrashy, so we measure each
+     playhead's (offset,width) once and reuse it every frame. Invalidated on
+     resize/scroll + when the grid is rebuilt (phGeomDirty=true). */
+  var phGeom = {};        // key -> {offset, width}
+  var phGeomDirty = true;
+  function invalidatePlayheadGeom(){ phGeomDirty = true; }
+  function geomFor(key, compute){
+    if (phGeomDirty){ phGeom = {}; phGeomDirty = false; }
+    if (!phGeom[key]) phGeom[key] = compute();
+    return phGeom[key];
+  }
+  function placePlayhead(ph, pane, ticksEl, frac){
+    var g = geomFor('drum', function(){
+      var paneRect=pane.getBoundingClientRect();
+      var ticksRect=ticksEl.getBoundingClientRect();
+      return { offset: ticksRect.left-paneRect.left, width: ticksRect.width };
+    });
+    ph.style.left=(g.offset + frac*g.width)+'px';
+  }
+  // arp playhead — now honours the SAME left gutter as the drum grid so the accent
+  // columns line up at the same fractional x on bar 1. `canvasEl` is the content element
+  // (the roll/strip canvas) which sits after the gutter padding.
+  function placePlayheadFull(ph, pane, frac, canvasEl){
+    if (!pane) return;
+    var g = geomFor(ph.id, function(){
+      var paneRect=pane.getBoundingClientRect();
+      if (canvasEl && canvasEl.clientWidth){
+        var cRect=canvasEl.getBoundingClientRect();
+        return { offset: cRect.left-paneRect.left, width: cRect.width };
+      }
+      var gp=parseFloat(getComputedStyle(pane).paddingLeft)||0;
+      return { offset: gp, width: pane.clientWidth-gp };
+    });
+    ph.style.left=(g.offset + frac*g.width)+'px';
+  }
+  // MIDI activity chip flash
+  var lastNoteSeen=0;
+  function flashMidi(){
+    var st={}; try{ st=FS.midi.status()||{}; }catch(e){}
+    if (st.lastNoteAt && st.lastNoteAt!==lastNoteSeen){
+      lastNoteSeen=st.lastNoteAt;
+      var chip=$('midiChip'); chip.classList.add('flash');
+      setTimeout(function(){ chip.classList.remove('flash'); }, 80);
+    }
+  }
+
+  /* ====================================================================
+     6. KEYBOARD MAP
+     ==================================================================== */
+  document.addEventListener('keydown', function(e){
+    var tag=(e.target.tagName||'').toLowerCase();
+    if (tag==='input'||tag==='select'||tag==='textarea') return;
+    var k=e.key.toLowerCase();
+
+    if (e.code==='Space'){ e.preventDefault(); toggleTransport(); return; }
+    if (k==='0'){ e.preventDefault(); call('panic'); launchHandles={}; stopHandles={}; refreshPadStates(); syncPlayBtn(); toast('PANIC — all stop'); return; }
+
+    // scenes 1-8
+    var si=SCENE_KEYS.indexOf(k);
+    if (si>=0){ var scenes=[]; try{scenes=FS.scenes.list()||[];}catch(_){ } if(scenes[si]){ e.preventDefault(); launchScene(scenes[si].id); } return; }
+    // drum clips q-i
+    var di=DRUM_KEYS.indexOf(k);
+    if (di>=0){ var dc=[]; try{dc=FS.clips.list(['drum'])||[];}catch(_){ } if(dc[di]){ e.preventDefault(); launchClip('drum',dc[di].id); } return; }
+    // arp clips a-k
+    var ai=ARP_KEYS.indexOf(k);
+    if (ai>=0){ var ac=[]; try{ac=FS.clips.list(['arp'])||[];}catch(_){ } if(ac[ai]){ e.preventDefault(); launchClip('arp',ac[ai].id); } return; }
+  });
+
+  /* ====================================================================
+     7. TOAST + FULL REFRESH + BOOT
+     ==================================================================== */
+  var toastTimer=null;
+  function toast(msg){
+    var t=$('toast'); t.textContent=msg; t.classList.add('show');
+    if(toastTimer)clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){ t.classList.remove('show'); }, 2200);
+  }
+
+  function fullRefresh(){
+    // pull bpm/swing/quant from engine state
+    try { bpmEl.value=FS.clock.getBpm(); } catch(e){}
+    try { var sw=FS.getSwing(); swingEl.value=sw; swingVal.textContent=sw+'%'; } catch(e){}
+    renderDrums();
+    populateArpModeSelect();
+    buildChordTypes(); buildArpLenOptions(); buildKeyboard(); refreshArp();
+    renderScenes(); renderAllClips();
+    setupCanvases(); drawRoll();
+    refreshMidiChip();
+    syncPlayBtn();
+  }
+
+  window.addEventListener('resize', function(){ invalidatePlayheadGeom(); setupCanvases(); drawRoll(); });
+  // grids scroll horizontally inside .lane-scroll → playhead geometry shifts; recompute.
+  window.addEventListener('scroll', invalidatePlayheadGeom, true);
+
+  // boot
+  fullRefresh();
+  requestAnimationFrame(positionLoop);
+
+  // expose a tiny debug handle
+  window.__FSUI = { refresh: fullRefresh };
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EMITR · THE OBSERVATORY</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Azeret+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   EMITR · THE OBSERVATORY — design tokens
+   ============================================================ */
+:root{
+  --bg:#060606; --surface:#0e0e0e; --surface-hover:#161616; --border:#1a1a1a;
+  --accent:#8b2020; --accent-light:#b83030; --accent-dim:#5a1515;
+  --text:#e8e8e8; --text-muted:#888; --text-dim:#555;
+  --gold:#c8a23a; /* wip status */
+  --offscale:#3a6a8b; /* cooler shade for borrowed / off-scale notes */
+  --ease:cubic-bezier(.4,0,.2,1);
+  --s4:4px; --s8:8px; --s12:12px; --s20:20px; --s32:32px; --s48:48px; --s80:80px;
+  --header-h:56px; --piano-h:148px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'Azeret Mono',ui-monospace,monospace; font-weight:300;
+  font-size:13px; line-height:1.5; overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--accent); color:var(--bg)}
+/* scrollbar */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:0}
+::-webkit-scrollbar-thumb:hover{background:#2a2a2a}
+* {scrollbar-width:thin; scrollbar-color:var(--border) transparent}
+
+h1,h2,h3,.bebas{font-family:'Bebas Neue',sans-serif;font-weight:400;letter-spacing:.04em}
+button{font-family:inherit;cursor:pointer;color:inherit;background:none;border:none}
+a{color:var(--accent-light);text-decoration:none}
+a:hover{color:var(--text)}
+input,textarea,select{font-family:inherit;color:var(--text);background:var(--bg);border:1px solid var(--border);outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--accent-dim)}
+
+/* ---- grain overlay (signature) ---- */
+#grain{
+  position:fixed;inset:0;z-index:9000;pointer-events:none;
+  opacity:.035;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ============================================================ HEADER */
+header{
+  position:fixed;top:0;left:0;right:0;height:var(--header-h);z-index:500;
+  display:flex;align-items:center;gap:var(--s20);padding:0 var(--s20);
+  background:rgba(14,14,14,.85);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+}
+.brand{font-family:'Bebas Neue';font-size:28px;letter-spacing:.18em;cursor:pointer;color:var(--text);user-select:none}
+.brand:hover{color:var(--accent-light)}
+.brand .o{color:var(--accent-light)}
+nav.tabs{display:flex;gap:var(--s4);margin:0 auto}
+.tab{
+  font-family:'Bebas Neue';font-size:17px;letter-spacing:.14em;color:var(--text-muted);
+  padding:6px 14px;position:relative;transition:color .2s var(--ease);
+}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--text)}
+.tab.active::after{content:"";position:absolute;left:14px;right:14px;bottom:2px;height:2px;background:var(--accent);}
+.hbtns{display:flex;align-items:center;gap:var(--s8)}
+.ghost{
+  font-family:'Azeret Mono';font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text-muted);border:1px solid var(--border);padding:6px 11px;
+  transition:all .2s var(--ease);
+}
+.ghost:hover{color:var(--text);border-color:#2a2a2a;background:var(--surface)}
+.count-chip{
+  font-size:11px;letter-spacing:.06em;color:var(--text-dim);border:1px solid var(--border);
+  padding:5px 9px;white-space:nowrap;
+}
+.count-chip b{color:var(--accent-light);font-weight:500}
+
+/* ============================================================ STAGE */
+#stage{
+  position:fixed;top:var(--header-h);left:0;right:0;bottom:var(--piano-h);
+  overflow:hidden;
+}
+.view{
+  position:absolute;inset:0;opacity:0;visibility:hidden;
+  transition:opacity .22s var(--ease);
+  overflow-y:auto;
+}
+.view.show{opacity:1;visibility:visible}
+.view-inner{padding:var(--s32) var(--s48) var(--s80)}
+
+/* ---------------- SKY VIEW ---------------- */
+#view-sky .view-inner{display:flex;flex-direction:column;align-items:center;min-height:100%;padding-top:var(--s32)}
+.hero{text-align:center;margin-bottom:var(--s12)}
+.hero h1{
+  font-size:clamp(56px,11vw,150px);line-height:.92;letter-spacing:.02em;color:var(--text);
+}
+.hero h1 .sub{display:block;font-size:clamp(28px,5vw,68px);color:var(--accent-light);letter-spacing:.06em}
+.hero .underline{height:2px;background:var(--accent);margin:14px auto 0;width:0;animation:drawline 1s var(--ease) .4s forwards}
+@keyframes drawline{to{width:min(420px,60vw)}}
+.hero .status{margin-top:14px;color:var(--text-dim);font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+.sky-toggle{display:flex;gap:var(--s8);margin:var(--s20) 0}
+.sky-toggle .seg{font-family:'Bebas Neue';font-size:15px;letter-spacing:.1em;color:var(--text-muted);border:1px solid var(--border);padding:5px 16px;transition:all .2s var(--ease)}
+.sky-toggle .seg.active{color:var(--text);border-color:var(--accent-dim);background:var(--surface)}
+.sky-toggle .seg:hover{color:var(--text)}
+#wheelWrap{position:relative;width:min(620px,86vw);aspect-ratio:1/1;margin:0 auto}
+#wheelSvg{width:100%;height:100%;overflow:visible}
+.wheel-hint{color:var(--text-dim);font-size:11px;letter-spacing:.08em;text-align:center;margin-top:var(--s12);max-width:560px}
+.mix-readout{
+  min-height:22px;margin-top:var(--s8);font-size:12px;letter-spacing:.04em;color:var(--text-muted);text-align:center;
+}
+.mix-readout b{color:var(--accent-light)}
+
+/* star + slice interactivity */
+.cam-slice{fill:transparent;stroke:var(--border);stroke-width:.5;cursor:pointer;transition:fill .25s var(--ease)}
+.cam-slice:hover{fill:rgba(139,32,32,.07)}
+.cam-slice.lit{fill:rgba(139,32,32,.14)}
+.cam-label{font-family:'Azeret Mono';font-size:9px;fill:var(--text-dim);letter-spacing:.04em}
+.spoke{stroke:var(--border);stroke-width:.5}
+.thread{stroke:var(--accent);stroke-width:.8;opacity:0;transition:opacity .3s var(--ease)}
+.thread.on{opacity:.5}
+.star{cursor:pointer;transition:r .25s var(--ease),opacity .3s var(--ease)}
+.star:hover{stroke:var(--accent-light);stroke-width:1.4}
+.star.selected{stroke:#fff;stroke-width:1.5}
+.star.dimmed{opacity:.18}
+.star-label{font-family:'Azeret Mono';font-size:8px;fill:var(--text-muted);pointer-events:none;opacity:0;transition:opacity .2s}
+.star-g:hover .star-label{opacity:1}
+
+/* ---------------- CATALOG VIEW ---------------- */
+.cat-controls{display:flex;flex-wrap:wrap;gap:var(--s8);align-items:center;margin-bottom:var(--s32)}
+.chipset{display:flex;gap:var(--s4);flex-wrap:wrap}
+.fchip{
+  font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);
+  border:1px solid var(--border);padding:5px 12px;border-radius:3px;transition:all .18s var(--ease);
+}
+.fchip:hover{color:var(--text);border-color:#2a2a2a}
+.fchip.active{color:var(--text);border-color:var(--accent);background:rgba(139,32,32,.1)}
+.cat-controls .sel-lbl{font-size:11px;color:var(--text-dim);letter-spacing:.06em;margin-left:var(--s8)}
+.cat-controls select{font-size:11px;padding:5px 8px;border-radius:3px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--s20)}
+
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:4px;
+  padding:var(--s20);min-height:200px;position:relative;cursor:pointer;
+  transition:transform .25s var(--ease),border-color .25s var(--ease),background .25s var(--ease);
+  display:flex;flex-direction:column;overflow:hidden;
+  opacity:0;transform:translateY(12px);
+}
+.card.revealed{opacity:1;transform:translateY(0)}
+.card::before{content:"";position:absolute;top:0;left:0;height:1px;width:0;background:var(--accent);transition:width .4s var(--ease)}
+.card:hover{border-color:#2a2a2a;background:var(--surface-hover);transform:translateY(-2px)}
+.card:hover::before{width:100%}
+.card-top{display:flex;align-items:center;gap:var(--s8);margin-bottom:var(--s12)}
+.status-dot{width:7px;height:7px;border-radius:50%;flex:0 0 auto}
+.micro{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim)}
+.card h3{font-size:30px;line-height:.95;color:var(--text);margin-bottom:2px;letter-spacing:.02em}
+.card .ver{font-size:11px;color:var(--text-muted);letter-spacing:.08em;margin-bottom:var(--s12)}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:var(--s12)}
+.chip{font-size:10px;letter-spacing:.05em;color:var(--text-muted);border:1px solid var(--border);padding:3px 7px;border-radius:3px;white-space:nowrap}
+.chip.cam{color:var(--text);border-color:var(--accent-dim)}
+.chip b{color:var(--text);font-weight:500}
+.scale-glyph{display:flex;gap:3px;margin:auto 0 var(--s12)}
+.gcell{flex:1;height:14px;background:#141414;border-radius:1px;transition:background .25s var(--ease)}
+.gcell.on{background:var(--accent-dim)}
+.gcell.root{background:var(--accent-light)}
+.card:hover .gcell.on{background:var(--accent)}
+.card-foot{display:flex;align-items:center;justify-content:space-between;margin-top:auto}
+.tagline{display:flex;gap:5px;flex-wrap:wrap}
+.tag{font-size:9px;letter-spacing:.05em;color:var(--text-dim)}
+.tag::before{content:"#";opacity:.5}
+.cbadge{font-size:10px;color:var(--text-dim);letter-spacing:.05em}
+.cbadge b{color:var(--accent-light)}
+.empty-note{color:var(--text-dim);font-size:13px;letter-spacing:.04em;padding:var(--s32)}
+
+/* loading shimmer skeletons */
+.skel{background:var(--surface);border:1px solid var(--border);border-radius:4px;min-height:200px;position:relative;overflow:hidden}
+.skel::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 20%,rgba(139,32,32,.06) 50%,transparent 80%);transform:translateX(-100%);animation:shimmer 1.4s var(--ease) infinite}
+@keyframes shimmer{to{transform:translateX(100%)}}
+
+/* ---------------- PROFILE SIDE-PANEL ---------------- */
+#backdrop{position:fixed;inset:0;background:rgba(6,6,6,.6);z-index:600;opacity:0;visibility:hidden;transition:opacity .2s var(--ease)}
+#backdrop.show{opacity:1;visibility:visible}
+#panel{
+  position:fixed;top:0;right:0;bottom:0;width:40vw;max-width:620px;min-width:340px;z-index:610;
+  background:var(--surface);border-left:1px solid var(--accent);
+  transform:translateX(102%);transition:transform .28s var(--ease);
+  display:flex;flex-direction:column;
+}
+#panel.show{transform:translateX(0)}
+.panel-head{
+  position:sticky;top:0;background:linear-gradient(180deg,var(--surface) 70%,transparent);
+  padding:var(--s20) var(--s20) var(--s12);display:flex;align-items:flex-start;gap:var(--s12);z-index:2;
+}
+.panel-head .ph-l{flex:1}
+.panel-head .ph-status{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.panel-head h2{font-size:38px;line-height:.9;color:var(--text);letter-spacing:.02em}
+.panel-close{font-size:22px;color:var(--text-muted);line-height:1;padding:2px 6px}
+.panel-close:hover{color:var(--accent-light)}
+.panel-body{padding:0 var(--s20) var(--s48);overflow-y:auto;flex:1}
+.pblock{margin-bottom:var(--s32)}
+.pblock .lbl{font-family:'Bebas Neue';font-size:15px;letter-spacing:.14em;color:var(--accent-light);margin-bottom:var(--s12);border-bottom:1px solid var(--border);padding-bottom:5px}
+.kv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s12)}
+.kv{border:1px solid var(--border);border-radius:3px;padding:9px 10px}
+.kv .k{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:3px}
+.kv .v{font-size:18px;color:var(--text);font-weight:500;font-family:'Bebas Neue';letter-spacing:.04em}
+.kv .v small{font-size:11px;color:var(--text-muted);font-family:'Azeret Mono'}
+
+.scalerow{display:flex;gap:4px;margin-top:var(--s8)}
+.snote{flex:1;text-align:center;padding:8px 0;font-size:13px;border:1px solid var(--border);border-radius:3px;color:var(--text-dim);background:#0c0c0c}
+.snote.in{color:var(--text);border-color:var(--accent-dim);background:rgba(139,32,32,.08)}
+.snote.root{color:#fff;border-color:var(--accent);background:rgba(184,48,48,.18);font-weight:600}
+
+.btn-primary{
+  font-family:'Bebas Neue';font-size:16px;letter-spacing:.12em;color:var(--text);
+  background:var(--accent);border:1px solid var(--accent);padding:9px 18px;border-radius:3px;
+  transition:all .2s var(--ease);width:100%;margin-top:var(--s12);
+}
+.btn-primary:hover{background:var(--accent-light);border-color:var(--accent-light)}
+
+.filerow{display:flex;align-items:center;gap:var(--s8);padding:8px 10px;border:1px solid var(--border);border-radius:3px;margin-bottom:6px;font-size:11px}
+.filerow .ft{font-size:9px;letter-spacing:.1em;color:var(--accent-light);text-transform:uppercase;flex:0 0 auto;width:54px}
+.filerow .fp{color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.filerow a.fp:hover{color:var(--text)}
+
+.chordstrip{display:flex;gap:6px;flex-wrap:wrap}
+.chordblk{
+  border:1px solid var(--border);border-radius:3px;padding:10px 12px;min-width:62px;text-align:center;cursor:pointer;
+  transition:all .2s var(--ease);position:relative;
+}
+.chordblk:hover{border-color:var(--accent-dim);background:rgba(139,32,32,.08)}
+.chordblk.playing{border-color:var(--accent);background:rgba(184,48,48,.2)}
+.chordblk .cn{font-family:'Bebas Neue';font-size:20px;letter-spacing:.04em;color:var(--text)}
+.chordblk .cr{font-size:9px;color:var(--text-dim);letter-spacing:.06em;margin-top:2px}
+.chordblk.borrowed{border-color:var(--offscale)}
+.chordblk.borrowed .cn{color:var(--offscale)}
+.chordblk.borrowed::after{content:"♭";position:absolute;top:3px;right:5px;font-size:10px;color:var(--offscale)}
+
+.prod-note{margin-bottom:var(--s12)}
+.prod-note .pnt{font-size:11px;letter-spacing:.08em;color:var(--accent-light);text-transform:uppercase;margin-bottom:4px}
+.prod-note p{color:var(--text-muted);font-size:12px;line-height:1.55}
+.sd-item{border-left:2px solid var(--accent-dim);padding-left:10px;margin-bottom:10px}
+.sd-item .sde{font-size:12px;color:var(--text);letter-spacing:.04em;margin-bottom:2px}
+.sd-item .sdo{font-size:11px;color:var(--text-muted)}
+.sd-item .sdr{font-size:11px;color:var(--text-dim);margin-top:2px;font-style:italic}
+ul.plist{list-style:none}
+ul.plist li{font-size:11px;color:var(--text-muted);padding:4px 0 4px 14px;position:relative;line-height:1.5}
+ul.plist li::before{content:"›";position:absolute;left:0;color:var(--accent-dim)}
+.dna-row{display:flex;flex-wrap:wrap;gap:6px}
+.dna{font-size:10px;color:var(--text-muted);border:1px solid var(--border);padding:4px 9px;border-radius:3px}
+
+/* energy sparkline + structure */
+.spark{display:block;width:100%;height:40px;margin-top:var(--s8)}
+.structrow{display:flex;height:18px;gap:2px;margin-top:var(--s8);border-radius:2px;overflow:hidden}
+.structseg{height:100%;position:relative;min-width:6px}
+
+/* comments */
+.comment{border-left:2px solid var(--accent);padding:8px 10px;margin-bottom:8px;background:#0c0c0c;border-radius:0 3px 3px 0;position:relative}
+.comment .ct{font-size:12px;color:var(--text);white-space:pre-wrap;word-break:break-word}
+.comment .cm{font-size:9px;color:var(--text-dim);letter-spacing:.06em;margin-top:5px;display:flex;justify-content:space-between}
+.comment .cdel{opacity:0;color:var(--text-dim);transition:opacity .15s,color .15s}
+.comment:hover .cdel{opacity:1}
+.comment .cdel:hover{color:var(--accent-light)}
+.commentbox textarea{width:100%;min-height:54px;resize:vertical;padding:9px;font-size:13px;border-radius:3px;line-height:1.5}
+.commentbox .cb-actions{display:flex;justify-content:flex-end;margin-top:8px}
+.savepulse{animation:pulse .3s var(--ease)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(184,48,48,.6)}100%{box-shadow:0 0 0 6px rgba(184,48,48,0)}}
+.orphan-flag{font-size:9px;color:var(--gold);letter-spacing:.08em;border:1px solid var(--gold);padding:2px 6px;border-radius:3px;margin-left:8px}
+
+.sc-input{display:flex;gap:6px}
+.sc-input input{flex:1;font-size:11px;padding:7px 9px;border-radius:3px}
+.sc-iframe{width:100%;height:120px;border:1px solid var(--border);border-radius:3px;margin-top:4px}
+
+.editfield{font-size:12px;padding:6px 8px;border-radius:3px;width:100%}
+.edit-toggle{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);float:right;cursor:pointer}
+.edit-toggle:hover{color:var(--accent-light)}
+
+/* ---------------- PIANO RIBBON ---------------- */
+#piano{
+  position:fixed;left:0;right:0;bottom:0;height:var(--piano-h);z-index:550;
+  background:rgba(10,10,10,.94);backdrop-filter:blur(10px);border-top:1px solid var(--border);
+  display:flex;flex-direction:column;
+}
+.piano-bar{display:flex;align-items:center;gap:var(--s12);padding:6px var(--s20);border-bottom:1px solid var(--border);min-height:34px}
+.piano-bar .ptitle{font-family:'Bebas Neue';font-size:15px;letter-spacing:.12em;color:var(--text-muted)}
+.piano-bar .pctx{font-size:11px;color:var(--accent-light);letter-spacing:.05em}
+.piano-bar .pctx span{color:var(--text-dim)}
+.piano-bar .grow{flex:1}
+.piano-bar select{font-size:11px;padding:4px 7px;border-radius:3px}
+.piano-bar .pbtn{font-size:11px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--border);padding:5px 11px;border-radius:3px;color:var(--text-muted);transition:all .18s var(--ease)}
+.piano-bar .pbtn:hover{color:var(--text);border-color:#2a2a2a}
+.piano-bar .pbtn.accent{border-color:var(--accent);color:var(--text);background:rgba(139,32,32,.12)}
+.piano-bar .pbtn.accent:hover{background:var(--accent)}
+
+.keys-wrap{flex:1;position:relative;overflow:hidden}
+#waveCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.5}
+#keys{position:absolute;inset:0;display:flex;padding:0 8px 8px}
+.wkey{
+  position:relative;flex:1;background:linear-gradient(180deg,#161616,#0d0d0d);border:1px solid #000;border-top:none;
+  border-radius:0 0 3px 3px;cursor:pointer;transition:background .08s var(--ease);
+}
+.wkey:hover{background:linear-gradient(180deg,#1e1e1e,#141414)}
+.wkey.in-scale{background:linear-gradient(180deg,#2a1414,#160a0a)}
+.wkey.root{background:linear-gradient(180deg,#5a1515,#2a0c0c)}
+.wkey.offscale-lit{background:linear-gradient(180deg,#214055,#10222e)}
+.wkey.active{background:linear-gradient(180deg,var(--accent-light),var(--accent))}
+.wkey .klabel{position:absolute;bottom:5px;left:0;right:0;text-align:center;font-size:8px;color:var(--text-dim);pointer-events:none}
+.wkey.root .klabel{color:#fff}
+.bkey{
+  position:absolute;top:0;width:5%;height:58%;background:linear-gradient(180deg,#0a0a0a,#000);
+  border:1px solid #000;border-radius:0 0 3px 3px;cursor:pointer;z-index:3;transition:background .08s var(--ease);
+}
+.bkey:hover{background:linear-gradient(180deg,#1a1a1a,#0a0a0a)}
+.bkey.in-scale{background:linear-gradient(180deg,#2a1414,#0d0606)}
+.bkey.root{background:linear-gradient(180deg,#6a1818,#2a0a0a)}
+.bkey.offscale-lit{background:linear-gradient(180deg,#21404f,#0a161e)}
+.bkey.active{background:linear-gradient(180deg,var(--accent-light),var(--accent))}
+.bkey .klabel{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:7px;color:#444;pointer-events:none}
+
+/* boot */
+#boot{position:fixed;inset:0;z-index:9500;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity .6s var(--ease)}
+#boot.gone{opacity:0;pointer-events:none}
+#boot .bw{font-family:'Bebas Neue';font-size:14px;letter-spacing:.4em;color:var(--accent-dim);overflow:hidden;white-space:nowrap;border-right:2px solid var(--accent);width:0;animation:type 1.6s steps(28) forwards,blink .5s step-end infinite}
+@keyframes type{to{width:13ch}}
+@keyframes blink{50%{border-color:transparent}}
+
+/* fatal / missing-catalog notice */
+#fatal{position:fixed;inset:var(--header-h) 0 var(--piano-h);display:none;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:var(--s48);z-index:50}
+#fatal h2{font-size:48px;color:var(--accent-light);margin-bottom:var(--s12)}
+#fatal p{color:var(--text-muted);max-width:520px;line-height:1.6}
+#fatal code{color:var(--text);background:var(--surface);padding:2px 6px;border-radius:2px}
+
+/* ---- accent ghost (Add button) ---- */
+.ghost.accent-ghost{color:var(--accent-light);border-color:var(--accent-dim)}
+.ghost.accent-ghost:hover{color:var(--text);background:var(--accent);border-color:var(--accent)}
+
+/* ---- octave indicator ---- */
+.oct-ind{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);border:1px solid var(--border);padding:4px 8px;border-radius:3px;white-space:nowrap}
+.oct-ind b{color:var(--accent-light);font-weight:500}
+.oct-ind.bump{animation:octbump .3s var(--ease)}
+@keyframes octbump{0%{border-color:var(--accent)}100%{border-color:var(--border)}}
+
+/* ---- mini Camelot wheel (corner, during playback) ---- */
+#miniWheel{
+  position:absolute;right:10px;bottom:10px;width:104px;height:104px;z-index:6;
+  opacity:0;transform:scale(.82);transition:opacity .3s var(--ease),transform .3s var(--ease);pointer-events:none;
+  filter:drop-shadow(0 0 8px rgba(6,6,6,.9));
+}
+#miniWheel.show{opacity:.96;transform:scale(1)}
+.mw-slice{fill:#0c0c0c;stroke:#000;stroke-width:.4;transition:fill .15s var(--ease)}
+.mw-slice.lit{fill:var(--accent);}
+.mw-slice.lit-borrowed{fill:var(--offscale);}
+.mw-arc{fill:none;stroke:var(--accent-light);stroke-width:3;stroke-linecap:round;opacity:0;transition:opacity .12s var(--ease);filter:drop-shadow(0 0 4px var(--accent-light))}
+.mw-arc.on{opacity:1}
+.mw-arc.borrowed{stroke:var(--offscale);filter:drop-shadow(0 0 4px var(--offscale))}
+.mw-lbl{font-family:'Azeret Mono';font-size:4.4px;fill:var(--text-dim)}
+.mw-ttl{font-family:'Bebas Neue';font-size:7px;fill:var(--text-muted);letter-spacing:1px}
+
+/* ---- camera zoom: star/profile -> piano on PLAY THE KEY ---- */
+#piano.igniting{animation:pianoIgnite 1.1s var(--ease)}
+@keyframes pianoIgnite{
+  0%{box-shadow:0 0 0 0 rgba(184,48,48,0)}
+  18%{box-shadow:0 -22px 60px -10px rgba(184,48,48,.55)}
+  100%{box-shadow:0 0 0 0 rgba(184,48,48,0)}
+}
+.keys-wrap.zoomflash{animation:zoomflash 1.1s var(--ease)}
+@keyframes zoomflash{
+  0%{transform:scale(1.018);filter:brightness(1.35)}
+  100%{transform:scale(1);filter:brightness(1)}
+}
+.star.firing{animation:starFire .9s var(--ease)}
+@keyframes starFire{0%{filter:drop-shadow(0 0 0 var(--accent-light))}40%{filter:drop-shadow(0 0 9px var(--accent-light))}100%{filter:drop-shadow(0 0 0 var(--accent-light))}}
+/* flicker for major/minor-3rd (Picardy) tracks */
+.star.flicker{animation:starFlicker 2.6s var(--ease) infinite}
+@keyframes starFlicker{0%,100%{fill:var(--accent-light)}48%{fill:#fff}52%{fill:#fff}}
+
+/* ---- inline audio audition ---- */
+.audio-audition{width:100%;height:34px;margin-top:6px;filter:invert(.86) hue-rotate(170deg) saturate(.6)}
+
+/* ---- SKY mix toggle ---- */
+.mix-toggle-btn{font-family:'Bebas Neue';font-size:14px;letter-spacing:.1em;color:var(--text-muted);border:1px solid var(--border);padding:4px 14px;transition:all .2s var(--ease)}
+.mix-toggle-btn.on{color:var(--text);border-color:var(--accent);background:rgba(139,32,32,.14)}
+.mix-toggle-btn:hover{color:var(--text)}
+
+/* ---- ADD ENTRY modal ---- */
+#addModal{position:fixed;inset:0;z-index:700;display:none;align-items:center;justify-content:center;background:rgba(6,6,6,.72);backdrop-filter:blur(4px)}
+#addModal.show{display:flex}
+.add-card{background:var(--surface);border:1px solid var(--accent-dim);border-radius:5px;width:min(560px,92vw);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 30px 90px -20px #000}
+.add-head{display:flex;align-items:center;justify-content:space-between;padding:var(--s20) var(--s20) var(--s12);border-bottom:1px solid var(--border)}
+.add-head h2{font-size:30px;color:var(--text);letter-spacing:.04em}
+.add-body{padding:var(--s20);overflow-y:auto;display:flex;flex-direction:column;gap:var(--s12)}
+.add-seg{display:flex;gap:var(--s4)}
+.add-seg .seg{font-family:'Bebas Neue';font-size:14px;letter-spacing:.1em;color:var(--text-muted);border:1px solid var(--border);padding:5px 16px;transition:all .2s var(--ease);flex:1}
+.add-seg .seg.active{color:var(--text);border-color:var(--accent);background:rgba(139,32,32,.12)}
+.afield{display:flex;flex-direction:column;gap:5px}
+.afield>span{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)}
+.afield input,.afield select{font-size:13px;padding:8px 10px;border-radius:3px}
+.arow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--s8)}
+.arow:has(.afield:nth-child(2):last-child){grid-template-columns:1fr 1fr}
+.add-note{font-size:10px;color:var(--text-dim);line-height:1.55}
+.add-note code{color:var(--text);background:var(--bg);padding:1px 4px;border-radius:2px}
+.add-note b{color:var(--accent-light)}
+
+@media(max-width:680px){
+  .view-inner{padding:var(--s20) var(--s12) var(--s80)}
+  nav.tabs{display:flex;gap:0;margin:0 auto;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  nav.tabs .tab{font-size:14px;padding:5px 9px;flex:0 0 auto}
+  .brand{font-size:22px}
+  header{gap:var(--s8);padding:0 var(--s8)}
+  .count-chip,.ghost:not(.accent-ghost){display:none}
+  #panel{width:100vw;max-width:none}
+  :root{--piano-h:134px}
+  .kv-grid{grid-template-columns:repeat(2,1fr)}
+  .arow{grid-template-columns:1fr 1fr}
+  #miniWheel{width:78px;height:78px;right:6px;bottom:6px}
+}
+</style>
+</head>
+<body>
+<div id="grain"></div>
+
+<!-- boot -->
+<div id="boot"><div class="bw">EMITR OBSERVATORY</div></div>
+
+<!-- header -->
+<header>
+  <div class="brand" data-go="sky"><span class="o">E</span>MITR</div>
+  <nav class="tabs">
+    <button class="tab" data-go="sky">SKY</button>
+    <button class="tab" data-go="catalog">CATALOG</button>
+    <button class="tab" id="tabPiano">PIANO</button>
+    <button class="tab" data-go="catalog" data-filter="tool">TOOLS</button>
+  </nav>
+  <div class="hbtns">
+    <span class="count-chip" id="countChip">— · —</span>
+    <button class="ghost accent-ghost" id="btnAdd">+ Add</button>
+    <button class="ghost" id="btnExport">Export JSON</button>
+    <button class="ghost" id="btnImport">Import</button>
+    <input type="file" id="importFile" accept="application/json" style="display:none">
+  </div>
+</header>
+
+<!-- stage -->
+<div id="stage">
+  <!-- SKY -->
+  <section class="view" id="view-sky">
+    <div class="view-inner">
+      <div class="hero">
+        <h1>EMITR<span class="sub">THE OBSERVATORY</span></h1>
+        <div class="underline"></div>
+        <div class="status" id="skyStatus">Loading constellation…</div>
+      </div>
+      <div class="sky-toggle">
+        <button class="seg active" data-skytype="track">STARS</button>
+        <button class="seg" data-skytype="tool">TOOLS</button>
+      </div>
+      <div style="margin:var(--s8) 0 var(--s4)"><button class="mix-toggle-btn" id="mixToggle">MIX MODE: OFF</button></div>
+      <div id="wheelWrap"><svg id="wheelSvg" viewBox="-310 -310 620 620"></svg></div>
+      <div class="mix-readout" id="mixReadout">Hover a star to hear its tonic. Click → profile. Turn on MIX MODE to pick two stars and test harmonic compatibility.</div>
+      <div class="wheel-hint">The Camelot wheel is the harmonic-mixing map. Size = energy · brightness = readiness. Click a star → profile · click a slice → filter the catalog · MIX MODE → click two stars for compatibility + ΔBPM.</div>
+    </div>
+  </section>
+
+  <!-- CATALOG -->
+  <section class="view" id="view-catalog">
+    <div class="view-inner">
+      <div class="cat-controls">
+        <div class="chipset" id="typeChips">
+          <button class="fchip active" data-type="all">All</button>
+          <button class="fchip" data-type="track">Tracks</button>
+          <button class="fchip" data-type="tool">Tools</button>
+        </div>
+        <div class="chipset" id="statusChips"></div>
+        <span class="sel-lbl">KEY</span>
+        <select id="keyFilter"><option value="">all</option></select>
+        <span class="sel-lbl">BPM</span>
+        <select id="bpmFilter">
+          <option value="">all</option>
+          <option value="0-120">&lt;120</option>
+          <option value="120-130">120–130</option>
+          <option value="130-140">130–140</option>
+          <option value="140-150">140–150</option>
+          <option value="150-999">150+</option>
+        </select>
+        <span class="sel-lbl">SORT</span>
+        <select id="sortSel">
+          <option value="recent">recent</option>
+          <option value="bpm">bpm</option>
+          <option value="key">camelot</option>
+          <option value="title">title</option>
+        </select>
+      </div>
+      <div class="grid" id="grid"></div>
+    </div>
+  </section>
+
+  <div id="fatal">
+    <h2>CONSTELLATION DARK</h2>
+    <p><code>catalog.js</code> didn't load <code>window.EMITR_CATALOG</code>. Place <code>catalog.js</code> next to this file and open via double-click. A minimal built-in seed is shown if available.</p>
+  </div>
+</div>
+
+<!-- profile panel -->
+<div id="backdrop"></div>
+<aside id="panel">
+  <div class="panel-head">
+    <div class="ph-l">
+      <div class="ph-status" id="pStatus"></div>
+      <h2 id="pTitle"></h2>
+    </div>
+    <button class="panel-close" id="pClose">×</button>
+  </div>
+  <div class="panel-body" id="pBody"></div>
+</aside>
+
+<!-- ADD ENTRY modal (writes to OVERLAY only) -->
+<div id="addModal">
+  <div class="add-card">
+    <div class="add-head">
+      <h2>NEW ENTRY</h2>
+      <button class="panel-close" id="addClose">×</button>
+    </div>
+    <div class="add-body">
+      <div class="add-seg" id="addType">
+        <button class="seg active" data-t="track">TRACK</button>
+        <button class="seg" data-t="tool">TOOL</button>
+        <button class="seg" data-t="idea">IDEA</button>
+      </div>
+      <label class="afield"><span>Title</span><input id="aTitle" type="text" placeholder="e.g. New Track"></label>
+      <div class="arow">
+        <label class="afield"><span>Version</span><input id="aVer" type="text" placeholder="V1"></label>
+        <label class="afield"><span>Status</span>
+          <select id="aStatus">
+            <option value="idea">idea</option><option value="wip">wip</option>
+            <option value="mixing">mixing</option><option value="done">done</option>
+            <option value="released">released</option><option value="exploration">exploration</option>
+          </select>
+        </label>
+      </div>
+      <div class="arow track-only">
+        <label class="afield"><span>Tonic</span><select id="aTonic"></select></label>
+        <label class="afield"><span>Mode</span><select id="aMode"></select></label>
+        <label class="afield"><span>BPM</span><input id="aBpm" type="number" step="0.01" placeholder="130"></label>
+      </div>
+      <label class="afield track-only"><span>Camelot (e.g. 8A)</span><input id="aCamelot" type="text" placeholder="auto from tonic+mode"></label>
+      <label class="afield tool-only" style="display:none"><span>Trigger</span><input id="aTrigger" type="text" placeholder="/newtool"></label>
+      <label class="afield"><span>Tags (comma-separated)</span><input id="aTags" type="text" placeholder="dub-techno, drone"></label>
+      <label class="afield track-only"><span>WAV / file path (optional)</span><input id="aWav" type="text" placeholder="../tracks/My Track.wav"></label>
+      <div class="add-note">Written to your local overlay only — never touches <code>catalog.js</code>. Use <b>Export JSON</b> to persist into git.</div>
+      <button class="btn-primary" id="addCreate" style="margin-top:0">Create Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- piano ribbon -->
+<div id="piano">
+  <div class="piano-bar">
+    <span class="ptitle">PIANO</span>
+    <span class="pctx" id="pianoCtx">EXPLORE MODE</span>
+    <span class="grow"></span>
+    <span class="oct-ind" id="octInd" title="computer-keyboard octave (Z / X to shift)">OCT <b id="octVal">4</b></span>
+    <span class="sel-lbl" id="exploreRootLbl">ROOT</span>
+    <select id="exploreRoot"></select>
+    <select id="exploreScale"></select>
+    <button class="pbtn" id="btnProg" style="display:none">▶ PLAY PROGRESSION</button>
+    <button class="pbtn" id="btnPanic">⏹</button>
+  </div>
+  <div class="keys-wrap">
+    <canvas id="waveCanvas"></canvas>
+    <div id="keys"></div>
+    <!-- mini Camelot wheel — map layer, lights an arc per chord during PLAY THE KEY -->
+    <svg id="miniWheel" viewBox="-50 -50 100 100" aria-hidden="true"></svg>
+  </div>
+</div>
+
+<script src="catalog.js"></script>
+<script>
+/* ============================================================================
+   EMITR · THE OBSERVATORY  — vanilla JS engine
+   Loads window.EMITR_CATALOG (set by catalog.js). Never fetch()es on file://.
+   ========================================================================== */
+(function(){
+"use strict";
+
+/* ----------------------------- music theory ----------------------------- */
+const NOTE_TO_PC = {C:0,"C#":1,DB:1,"DB":1,D:2,"D#":3,EB:3,E:4,FB:4,"E#":5,F:5,"F#":6,GB:6,G:7,"G#":8,AB:8,A:9,"A#":10,BB:10,B:11,CB:11};
+const PC_SHARP = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+
+function pcOf(name){
+  if(name==null) return 0;
+  let s=String(name).trim();
+  // strip trailing octave digit(s) like C5 -> C
+  s=s.replace(/-?\d+$/,"");
+  s=s.replace("♭","b").replace("♯","#");
+  let key=s.toUpperCase();
+  if(key in NOTE_TO_PC) return NOTE_TO_PC[key];
+  // letter + accidental
+  let m=key.match(/^([A-G])(#|B|##|BB)?/);
+  if(!m) return 0;
+  let pc=NOTE_TO_PC[m[1]];
+  if(m[2]==="#") pc+=1; else if(m[2]==="##") pc+=2;
+  else if(m[2]==="B") pc-=1; else if(m[2]==="BB") pc-=2;
+  return ((pc%12)+12)%12;
+}
+
+const SCALES = {
+  major:[0,2,4,5,7,9,11], ionian:[0,2,4,5,7,9,11],
+  minor:[0,2,3,5,7,8,10], aeolian:[0,2,3,5,7,8,10],
+  dorian:[0,2,3,5,7,9,10], phrygian:[0,1,3,5,7,8,10],
+  lydian:[0,2,4,6,7,9,11], mixolydian:[0,2,4,5,7,9,10],
+  locrian:[0,1,3,5,6,8,10],
+  "harmonic minor":[0,2,3,5,7,8,11], "melodic minor":[0,2,3,5,7,9,11]
+};
+function scaleSet(tonicName, mode){
+  const root=pcOf(tonicName);
+  const ivs=SCALES[String(mode||"minor").toLowerCase()]||SCALES.minor;
+  return new Set(ivs.map(i=>(root+i)%12));
+}
+// midi <-> freq (equal temperament, standard MIDI A4=69=440)
+function freqOfMidi(m){return 440*Math.pow(2,(m-69)/12);}
+function midiName(m){return PC_SHARP[((m%12)+12)%12]+(Math.floor(m/12)-1);}
+
+/* chord parsing — returns array of pitch classes (root-anchored), plus root pc */
+function parseChord(sym){
+  if(!sym) return {root:0,pcs:[0,4,7]};
+  let s=String(sym).trim().replace("♭","b").replace("♯","#");
+  let m=s.match(/^([A-Ga-g])(#{1,2}|b{1,2})?(.*)$/);
+  if(!m) return {root:0,pcs:[0,4,7]};
+  let root=pcOf(m[1].toUpperCase()+(m[2]||""));
+  let q=(m[3]||"").toLowerCase().replace(/\s+/g,"");
+  // normalize dissect-style "maj"/"min"
+  let intervals;
+  const has=(...t)=>t.some(x=>q.includes(x));
+  if(has("dim")) intervals=[0,3,6];
+  else if(has("aug")||q==="+"||q.includes("+5")) intervals=[0,4,8];
+  else if(has("sus2")) intervals=[0,2,7];
+  else if(has("sus4")||q==="sus") intervals=[0,5,7];
+  else if(has("maj7")||q.includes("major7")||q.includes("ma7")) intervals=[0,4,7,11];
+  else if(has("m7")||((q.startsWith("min")&&q.includes("7")))) intervals=[0,3,7,10];
+  else if(q.includes("7")) intervals=[0,4,7,10];
+  else if(has("add9")) intervals=[0,4,7,14];
+  else if(has("m9")||(q.startsWith("min")&&q.includes("9"))) intervals=[0,3,7,10,14];
+  else if(q.includes("9")) intervals=[0,4,7,10,14];
+  else if(has("m6")) intervals=[0,3,7,9];
+  else if(q.includes("6")) intervals=[0,4,7,9];
+  // IMPORTANT: test maj/major BEFORE the bare "m" minor branch so "maj" is not read as minor
+  else if(q.startsWith("maj")||q==="major"||q==="") intervals=[0,4,7];
+  else if(q.startsWith("min")||q.startsWith("m")||q==="-") intervals=[0,3,7];
+  else intervals=[0,4,7];
+  return {root, pcs:intervals.map(i=>(root+i)%12), intervals};
+}
+// voice a chord into actual midi notes around a base octave
+function voiceChord(sym, base){
+  const {root,intervals}=parseChord(sym);
+  const b = (base==null?48:base); // C3 region
+  // start root near base
+  let rootMidi = b + ((root - (b%12))%12 + 12)%12;
+  if(rootMidi - b > 6) rootMidi -= 12;
+  return (intervals||[0,4,7]).map(i=>rootMidi+i);
+}
+
+/* ----------------------------- Audio engine ----------------------------- */
+let AC=null, master=null, analyser=null, delaySend=null;
+const voices={}; // midi -> {osc1,osc2,gain}
+function ensureAudio(){
+  if(AC) { if(AC.state==="suspended") AC.resume(); return; }
+  AC=new (window.AudioContext||window.webkitAudioContext)();
+  master=AC.createGain(); master.gain.value=0.5;
+  analyser=AC.createAnalyser(); analyser.fftSize=1024;
+  // feedback delay (pseudo reverb)
+  const delay=AC.createDelay(); delay.delayTime.value=0.32;
+  const fb=AC.createGain(); fb.gain.value=0.28;
+  const wet=AC.createGain(); wet.gain.value=0.35;
+  delay.connect(fb); fb.connect(delay); delay.connect(wet);
+  delaySend=AC.createGain(); delaySend.gain.value=1; delaySend.connect(delay);
+  wet.connect(master);
+  master.connect(analyser); analyser.connect(AC.destination);
+}
+function noteOn(midi, vel){
+  ensureAudio();
+  if(voices[midi]) noteOff(midi,true);
+  // polyphony cap
+  const keys=Object.keys(voices);
+  if(keys.length>=12){ noteOff(+keys[0],true); }
+  const f=freqOfMidi(midi);
+  const o1=AC.createOscillator(); o1.type="sawtooth"; o1.frequency.value=f;
+  const o2=AC.createOscillator(); o2.type="sawtooth"; o2.frequency.value=f; o2.detune.value=7;
+  const lp=AC.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=1800; lp.Q.value=0.7;
+  const g=AC.createGain();
+  const v=(vel||0.8)*0.22;
+  const t=AC.currentTime;
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(v, t+0.008);              // A
+  g.gain.exponentialRampToValueAtTime(Math.max(v*0.6,0.0001), t+0.128); // D->S
+  o1.connect(lp); o2.connect(lp); lp.connect(g);
+  g.connect(master); g.connect(delaySend);
+  o1.start(); o2.start();
+  voices[midi]={o1,o2,g,lp};
+}
+function noteOff(midi, fast){
+  const v=voices[midi]; if(!v) return;
+  const t=AC.currentTime; const r=fast?0.05:0.35;
+  try{
+    v.g.gain.cancelScheduledValues(t);
+    v.g.gain.setValueAtTime(Math.max(v.g.gain.value,0.0001),t);
+    v.g.gain.exponentialRampToValueAtTime(0.0001,t+r);
+    v.o1.stop(t+r+0.02); v.o2.stop(t+r+0.02);
+  }catch(e){}
+  delete voices[midi];
+}
+function panic(){Object.keys(voices).forEach(m=>noteOff(+m,true));try{clearTimeout(progTimer);}catch(e){}var w=document.getElementById("miniWheel");if(w)w.classList.remove("show");}
+
+/* ----------------------------- state ----------------------------- */
+const LS_OVERLAY="emitr_observatory_overlay_v1";
+let SEED=null, MERGED=null, OVERLAY={};
+let CURRENT=null;        // selected entity id
+let activeOctave=4;      // computer keyboard octave
+let currentScalePCs=null, currentRootPC=null, currentOffscalePCs=null;
+
+function loadOverlay(){
+  try{OVERLAY=JSON.parse(localStorage.getItem(LS_OVERLAY))||{};}catch(e){OVERLAY={};}
+}
+function saveOverlay(){localStorage.setItem(LS_OVERLAY,JSON.stringify(OVERLAY));}
+
+const EDITABLE=new Set(["title","version","status","key","scale","bpm","bpmHalfTime","timeSignature","tags","files","soundcloudUrl","chordProgression","production","referenceDNA"]);
+
+function deepMergeEntity(seedE, ovE){
+  const out=JSON.parse(JSON.stringify(seedE||{}));
+  if(!ovE) return out;
+  // editable non-comment fields: overlay wins
+  Object.keys(ovE).forEach(k=>{
+    if(k==="comments") return;
+    if(EDITABLE.has(k)) out[k]=ovE[k];
+  });
+  // comments: union by id
+  const seedC=Array.isArray(out.comments)?out.comments:[];
+  const ovC=Array.isArray(ovE.comments)?ovE.comments:[];
+  const byId={};
+  seedC.forEach(c=>byId[c.id]=c);
+  ovC.forEach(c=>byId[c.id]=Object.assign({},byId[c.id],c));
+  out.comments=Object.values(byId).sort((a,b)=>(a.ts||"").localeCompare(b.ts||""));
+  return out;
+}
+function buildMerged(){
+  const cat=SEED;
+  const cats=["tracks","tools","ideas"];
+  MERGED={meta:cat.meta||{},tracks:[],tools:[],ideas:[]};
+  const seenIds=new Set();
+  cats.forEach(c=>{
+    (cat[c]||[]).forEach(e=>{
+      seenIds.add(e.id);
+      MERGED[c].push(deepMergeEntity(e, OVERLAY[e.id]));
+    });
+  });
+  // orphan guard: overlay ids not present in seed
+  Object.keys(OVERLAY).forEach(id=>{
+    if(seenIds.has(id)) return;
+    const ov=OVERLAY[id];
+    const bucket = (ov.type==="tool"?"tools":ov.type==="idea"?"ideas":"tracks");
+    const e=Object.assign({id,type:ov.type||"track",category:ov.category||"track",title:ov.title||id,status:ov.status||"idea",tags:[],comments:[]},ov,{orphaned:true});
+    if(!Array.isArray(e.comments)) e.comments=[];
+    MERGED[bucket].push(e);
+  });
+}
+function allEntities(){return [...MERGED.tracks,...MERGED.tools,...MERGED.ideas];}
+function getEntity(id){return allEntities().find(e=>e.id===id);}
+
+// write a single editable field into overlay
+function setOverlayField(id, field, value){
+  if(!OVERLAY[id]) OVERLAY[id]={type:(getEntity(id)||{}).type||"track"};
+  OVERLAY[id][field]=value;
+  saveOverlay(); buildMerged();
+}
+
+/* ----------------------------- helpers ----------------------------- */
+const $=s=>document.querySelector(s);
+const $$=s=>Array.from(document.querySelectorAll(s));
+function uuid(){return "c-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7);}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function fmtDur(s){if(s==null)return "—";const m=Math.floor(s/60),x=Math.round(s%60);return m+":"+String(x).padStart(2,"0");}
+function statusColor(st){
+  return ({released:"var(--accent-light)",done:"var(--accent-light)",mixing:"var(--accent)",wip:"var(--gold)",idea:"var(--text-muted)",exploration:"var(--text-muted)",archived:"var(--text-dim)"})[st]||"var(--text-muted)";
+}
+// camelot -> angle (1 at top, clockwise). number 1..12
+function camelotAngle(cam){
+  if(!cam) return null;
+  const n=parseInt(cam,10); if(isNaN(n)) return null;
+  return (n-1)*30 - 90; // degrees, 1 at top
+}
+function entityScale(e){
+  if(e.scale&&Array.isArray(e.scale.notes)&&e.scale.notes.length){
+    return {root:pcOf(e.scale.notes[0]),set:new Set(e.scale.notes.map(pcOf)),name:e.scale.name||"",mode:e.scale.mode||""};
+  }
+  const k=e.key||{};
+  const tonic=k.tonic||(e.scale&&e.scale.name? e.scale.name.split(" ")[0]:"C");
+  const mode=(e.scale&&e.scale.mode)||k.mode||"minor";
+  return {root:pcOf(tonic),set:scaleSet(tonic,mode),name:(tonic+" "+mode),mode};
+}
+
+// true if a track holds both a minor and a major chord on the SAME root (Picardy / parallel-mode flicker)
+function hasMajorMinorFlicker(e){
+  const prog=(e.chordProgression||[]).concat(((e.chordSummary||{}).unique_list||[]).map(c=>({chord:c})));
+  const major=new Set(), minor=new Set();
+  prog.forEach(c=>{
+    if(!c||!c.chord) return;
+    const p=parseChord(c.chord); const iv=p.intervals||[];
+    if(iv.includes(4)) major.add(p.root);
+    if(iv.includes(3)) minor.add(p.root);
+  });
+  for(const r of major){ if(minor.has(r)) return true; }
+  return false;
+}
+
+/* ============================================================ VIEWS */
+// resolved in init() so the app no longer depends on this <script> being
+// physically placed after the view elements (cheap insurance vs head/defer refactors).
+let views={};
+let activeView="sky";
+function go(view){
+  Object.values(views).forEach(v=>v.classList.remove("show"));
+  if(views[view]) views[view].classList.add("show");
+  activeView=view;
+  $$(".tab").forEach(t=>t.classList.toggle("active", t.dataset.go===view && !t.dataset.filter));
+  if(view==="sky") drawWheel();
+}
+
+/* ============================================================ CATALOG GRID */
+let typeFilter="all", statusFilter="all", keyFilter="", bpmFilter="", sortBy="recent";
+
+function buildStatusChips(){
+  const set=new Set(); allEntities().forEach(e=>e.status&&set.add(e.status));
+  const wrap=$("#statusChips"); wrap.innerHTML="";
+  const mk=(val,lbl)=>{const b=document.createElement("button");b.className="fchip"+(statusFilter===val?" active":"");b.dataset.status=val;b.textContent=lbl;wrap.appendChild(b);};
+  mk("all","Status: all");
+  ["released","done","mixing","wip","idea","exploration","archived"].forEach(s=>{if(set.has(s))mk(s,s);});
+}
+function buildKeyFilter(){
+  const sel=$("#keyFilter"); const cur=keyFilter;
+  const cams=new Set(); allEntities().forEach(e=>e.key&&e.key.camelot&&cams.add(e.key.camelot));
+  sel.innerHTML='<option value="">all</option>'+[...cams].sort((a,b)=>parseInt(a)-parseInt(b)||a.localeCompare(b)).map(c=>`<option value="${c}">${c}</option>`).join("");
+  sel.value=cur;
+}
+
+function filteredSorted(){
+  let arr=allEntities().filter(e=>{
+    if(typeFilter!=="all" && e.type!==typeFilter) return false;
+    if(statusFilter!=="all" && e.status!==statusFilter) return false;
+    if(keyFilter && !(e.key&&e.key.camelot===keyFilter)) return false;
+    if(bpmFilter){
+      const b=+e.bpm||0;
+      const [lo,hi]=bpmFilter.split("-").map(Number);
+      if(!(b>=lo && b<hi)) return false;
+    }
+    return true;
+  });
+  arr.sort((a,b)=>{
+    if(sortBy==="bpm") return (b.bpm||0)-(a.bpm||0);
+    if(sortBy==="key") return (parseInt((a.key||{}).camelot)||99)-(parseInt((b.key||{}).camelot)||99);
+    if(sortBy==="title") return String(a.title).localeCompare(String(b.title));
+    return String(b.updatedAt||b.createdAt||"").localeCompare(String(a.updatedAt||a.createdAt||""));
+  });
+  return arr;
+}
+function scaleGlyph(e){
+  const sc=entityScale(e);
+  let html="";
+  for(let pc=0;pc<12;pc++){
+    let cls="gcell";
+    if(pc===sc.root) cls+=" root";
+    else if(sc.set.has(pc)) cls+=" on";
+    html+=`<div class="${cls}"></div>`;
+  }
+  return `<div class="scale-glyph">${html}</div>`;
+}
+function cardHTML(e){
+  const cc=e.comments?e.comments.length:0;
+  const tags=(e.tags||[]).slice(0,4).map(t=>`<span class="tag">${esc(t)}</span>`).join("");
+  const chips=[];
+  if(e.type==="track"){
+    if(e.key&&e.key.label) chips.push(`<span class="chip"><b>${esc(e.key.label)}</b></span>`);
+    if(e.key&&e.key.camelot) chips.push(`<span class="chip cam">${esc(e.key.camelot)}</span>`);
+    if(e.bpm) chips.push(`<span class="chip">${(+e.bpm).toFixed(0)} BPM</span>`);
+  } else if(e.type==="tool"){
+    if(e.trigger) chips.push(`<span class="chip cam">${esc(e.trigger)}</span>`);
+    (e.tags||[]).slice(0,2).forEach(t=>chips.push(`<span class="chip">${esc(t)}</span>`));
+  }
+  const micro=e.type==="tool"?"TOOL":(e.version||"TRACK");
+  return `<article class="card" data-id="${esc(e.id)}">
+    <div class="card-top">
+      <span class="status-dot" style="background:${statusColor(e.status)}"></span>
+      <span class="micro">${esc((e.status||"").toUpperCase())} · ${esc((e.type||"").toUpperCase())}</span>
+    </div>
+    <h3>${esc(e.title||e.id)}</h3>
+    <div class="ver">${esc(micro)}</div>
+    <div class="chip-row">${chips.join("")}</div>
+    ${e.type==="track"?scaleGlyph(e):""}
+    <div class="card-foot">
+      <div class="tagline">${tags}</div>
+      <div class="cbadge">${cc?`<b>${cc}</b> note${cc>1?"s":""}`:""}${e.orphaned?'<span class="orphan-flag">orphan</span>':""}</div>
+    </div>
+  </article>`;
+}
+let revObserver=null;
+function renderGrid(){
+  buildStatusChips();
+  const grid=$("#grid");
+  const arr=filteredSorted();
+  if(!arr.length){grid.innerHTML='<div class="empty-note">No entries match these filters.</div>';return;}
+  grid.innerHTML=arr.map(cardHTML).join("");
+  // reveal-on-scroll stagger
+  if(revObserver) revObserver.disconnect();
+  revObserver=new IntersectionObserver((ents)=>{
+    ents.forEach((en,i)=>{if(en.isIntersecting){const el=en.target;const idx=[...grid.children].indexOf(el);setTimeout(()=>el.classList.add("revealed"),Math.min(idx,12)*60);revObserver.unobserve(el);}});
+  },{root:views.catalog,threshold:.05});
+  [...grid.children].forEach(c=>{ if(c.classList.contains("card")) revObserver.observe(c); });
+  grid.querySelectorAll(".card").forEach(c=>c.addEventListener("click",()=>openProfile(c.dataset.id)));
+  // magnetic tilt
+  grid.querySelectorAll(".card").forEach(c=>{
+    c.addEventListener("mousemove",ev=>{
+      const r=c.getBoundingClientRect();
+      const dx=(ev.clientX-r.left-r.width/2)/r.width, dy=(ev.clientY-r.top-r.height/2)/r.height;
+      c.style.transform=`translateY(-2px) perspective(700px) rotateY(${dx*4}deg) rotateX(${-dy*4}deg)`;
+    });
+    c.addEventListener("mouseleave",()=>{c.style.transform="";});
+  });
+}
+
+/* ============================================================ CAMELOT WHEEL */
+let skyType="track", mixSel=[];
+function drawWheel(){
+  const svg=$("#wheelSvg");
+  const arr=allEntities().filter(e=>e.type===skyType);
+  let html="";
+  const Rin=140, Rout=210, Rlab1=124, Rlab2=196;
+  // slices for 12 camelot numbers, inner=A(minor) outer=B(major)
+  for(let n=1;n<=12;n++){
+    const a0=(n-1)*30-90-15, a1=(n-1)*30-90+15;
+    const r0=80, r1=Rout;
+    html+=`<path class="cam-slice" data-cam-num="${n}" d="${arc(0,0,r0,r1,a0,a1)}"></path>`;
+    // spoke
+    const sa=(n-1)*30-90;
+    html+=`<line class="spoke" x1="${px(80,sa)}" y1="${py(80,sa)}" x2="${px(Rout,sa)}" y2="${py(Rout,sa)}"/>`;
+    // labels A inner / B outer
+    const la=(n-1)*30-90;
+    html+=`<text class="cam-label" x="${px(110,la)}" y="${py(110,la)+3}" text-anchor="middle">${n}A</text>`;
+    html+=`<text class="cam-label" x="${px(186,la)}" y="${py(186,la)+3}" text-anchor="middle">${n}B</text>`;
+  }
+  // rings
+  html+=`<circle cx="0" cy="0" r="80" fill="none" stroke="var(--border)" stroke-width=".5"/>`;
+  html+=`<circle cx="0" cy="0" r="155" fill="none" stroke="var(--border)" stroke-width=".5"/>`;
+  html+=`<circle cx="0" cy="0" r="210" fill="none" stroke="var(--border)" stroke-width=".5"/>`;
+  html+=`<text x="0" y="4" text-anchor="middle" font-family="Bebas Neue" font-size="22" fill="var(--text-dim)" letter-spacing="3">SKY</text>`;
+  // threads container (drawn empty, toggled on hover)
+  html+=`<g id="threads"></g>`;
+  // stars
+  arr.forEach(e=>{
+    const cam=e.key&&e.key.camelot; const ang=camelotAngle(cam);
+    if(ang==null){return;}
+    const isMajor=/B$/.test(cam);
+    const R = isMajor? 186 : 116; // outer ring for major (B), inner for minor (A)
+    // jitter within slice by id hash to avoid overlaps
+    const h=hash(e.id); const jang=ang + ((h%20)-10)*0.8; const jr=R + ((h>>5)%18)-9;
+    const cx=px(jr,jang), cy=py(jr,jang);
+    const energy = (e.energy&&e.energy.score)||0.5;
+    const rad = 4 + Math.max(0,Math.min(1,energy))*5;
+    const ready = (e.energy&&e.energy.play_readiness!=null)? e.energy.play_readiness : (e.status==="released"||e.status==="done"?0.9:e.status==="wip"?0.6:0.4);
+    const op = 0.4 + Math.max(0,Math.min(1,ready))*0.6;
+    // Picardy/parallel-mode flicker: track has both a minor-third AND major-third chord on the same root
+    const flick = hasMajorMinorFlicker(e) ? " flicker" : "";
+    html+=`<g class="star-g">
+      <circle class="star${flick}" data-id="${esc(e.id)}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${rad.toFixed(1)}"
+        fill="var(--accent-light)" fill-opacity="${op.toFixed(2)}" stroke="var(--accent-dim)" stroke-width=".5"/>
+      <text class="star-label" x="${cx.toFixed(1)}" y="${(cy-rad-4).toFixed(1)}" text-anchor="middle">${esc(e.title||e.id)}</text>
+    </g>`;
+  });
+  svg.innerHTML=html;
+  // events
+  svg.querySelectorAll(".cam-slice").forEach(p=>{
+    p.addEventListener("click",()=>{
+      const num=p.dataset.camNum;
+      keyFilter=""; // can't isolate A/B but filter by number-A primary
+      typeFilter=skyType; statusFilter="all";
+      $$("#typeChips .fchip").forEach(c=>c.classList.toggle("active",c.dataset.type===skyType));
+      buildKeyFilter();
+      // try set a key filter to the A of that number if exists
+      const opt=[...$("#keyFilter").options].find(o=>o.value===num+"A"||o.value===num+"B");
+      if(opt){keyFilter=opt.value;$("#keyFilter").value=opt.value;}
+      go("catalog"); renderGrid();
+    });
+  });
+  svg.querySelectorAll(".star").forEach(s=>{
+    s.addEventListener("mouseenter",()=>{
+      const e=getEntity(s.dataset.id); if(!e)return;
+      const sc=entityScale(e); noteOn(60+sc.root,0.6); setTimeout(()=>noteOff(60+sc.root),420);
+      highlightNeighbors(e);
+      $("#mixReadout").innerHTML=`<b>${esc(e.title)}</b> · ${esc((e.key||{}).label||"")} · ${esc((e.key||{}).camelot||"")} · ${e.bpm?(+e.bpm).toFixed(0)+" BPM":""}`;
+    });
+    s.addEventListener("mouseleave",()=>{clearThreads();});
+    s.addEventListener("click",ev=>{starActivate(s.dataset.id, ev);});
+  });
+}
+let mixMode=false;
+function starActivate(id, ev){
+  // MIX MODE (toggle or shift-click) → 2-star compatibility; otherwise open profile.
+  if(mixMode || (ev && ev.shiftKey)){
+    const svg=$("#wheelSvg");
+    const star=svg.querySelector(`.star[data-id="${cssesc(id)}"]`);
+    if(mixSel.length && mixSel[0]!==id){
+      const a=getEntity(mixSel[0]), b=getEntity(id);
+      $("#mixReadout").innerHTML=mixCompat(a,b);
+      mixSel=[];
+      svg.querySelectorAll(".star.selected").forEach(x=>x.classList.remove("selected"));
+    } else if(mixSel.length && mixSel[0]===id){
+      // deselect
+      mixSel=[]; if(star)star.classList.remove("selected");
+      $("#mixReadout").innerHTML="Pick another star to test the mix…";
+    } else {
+      mixSel=[id]; if(star)star.classList.add("selected");
+      const a=getEntity(id);
+      $("#mixReadout").innerHTML=`<b>${esc(a.title)}</b> selected · pick a second star…`;
+    }
+    return;
+  }
+  openProfile(id);
+}
+function mixCompat(a,b){
+  const ca=(a.key||{}).camelot, cb=(b.key||{}).camelot;
+  const na=parseInt(ca), nb=parseInt(cb);
+  const la=/B$/.test(ca||""), lb=/B$/.test(cb||"");
+  let comp="✗ key clash";
+  if(ca===cb) comp="✓ same key";
+  else if(na===nb && la!==lb) comp="✓ relative major/minor";
+  else if(la===lb && (Math.abs(na-nb)===1||Math.abs(na-nb)===11)) comp="✓ ±1 energy move";
+  const bd=Math.abs((+a.bpm||0)-(+b.bpm||0));
+  return `<b>${esc(a.title)}</b> → <b>${esc(b.title)}</b> · ${comp} · ΔBPM ${bd.toFixed(1)}`;
+}
+function highlightNeighbors(e){
+  const cam=(e.key||{}).camelot; if(!cam) return;
+  const n=parseInt(cam), isB=/B$/.test(cam);
+  const neighbors=[];
+  const wrap=x=>((x-1+12)%12)+1;
+  neighbors.push(wrap(n-1)+(isB?"B":"A"));
+  neighbors.push(wrap(n+1)+(isB?"B":"A"));
+  neighbors.push(n+(isB?"A":"B")); // relative
+  const compatStars=allEntities().filter(x=>x.type===skyType && neighbors.includes((x.key||{}).camelot));
+  const svg=$("#wheelSvg"); const tg=svg.querySelector("#threads");
+  const src=svg.querySelector(`.star[data-id="${cssesc(e.id)}"]`);
+  if(!src||!tg) return;
+  let h="";
+  compatStars.forEach(cs=>{
+    const t=svg.querySelector(`.star[data-id="${cssesc(cs.id)}"]`);
+    if(!t)return;
+    h+=`<line class="thread on" x1="${src.getAttribute("cx")}" y1="${src.getAttribute("cy")}" x2="${t.getAttribute("cx")}" y2="${t.getAttribute("cy")}"/>`;
+  });
+  tg.innerHTML=h;
+}
+function clearThreads(){const tg=$("#wheelSvg #threads"); if(tg)tg.innerHTML="";}
+function cssesc(s){return String(s).replace(/[^a-zA-Z0-9_-]/g,"\\$&");}
+function hash(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h;}
+// polar helpers (degrees)
+function px(r,a){return r*Math.cos(a*Math.PI/180);}
+function py(r,a){return r*Math.sin(a*Math.PI/180);}
+function arc(cx,cy,r0,r1,a0,a1){
+  const x0=px(r0,a0),y0=py(r0,a0),x1=px(r1,a0),y1=py(r1,a0);
+  const x2=px(r1,a1),y2=py(r1,a1),x3=px(r0,a1),y3=py(r0,a1);
+  const large=(a1-a0)>180?1:0;
+  return `M${x0} ${y0} L${x1} ${y1} A${r1} ${r1} 0 ${large} 1 ${x2} ${y2} L${x3} ${y3} A${r0} ${r0} 0 ${large} 0 ${x0} ${y0} Z`;
+}
+
+/* ============================================================ PROFILE PANEL */
+function openProfile(id){
+  const e=getEntity(id); if(!e)return;
+  CURRENT=id;
+  $("#pStatus").innerHTML=`<span class="status-dot" style="background:${statusColor(e.status)};width:7px;height:7px;border-radius:50%;display:inline-block"></span> ${esc((e.status||"").toUpperCase())} · ${esc((e.type||"").toUpperCase())}${e.orphaned?'<span class="orphan-flag">orphan</span>':""}`;
+  $("#pTitle").textContent=e.title||e.id;
+  $("#pBody").innerHTML = e.type==="tool"? renderTool(e) : renderTrack(e);
+  $("#backdrop").classList.add("show");
+  $("#panel").classList.add("show");
+  wireProfile(e);
+  // load scale into piano + sky select
+  loadScaleToPiano(e);
+}
+function closeProfile(){
+  $("#backdrop").classList.remove("show");
+  $("#panel").classList.remove("show");
+  CURRENT=null;
+}
+
+function renderTrack(e){
+  const sc=entityScale(e);
+  const k=e.key||{};
+  const conf=k.confidence||{};
+  // scale row
+  let srow="";
+  const scaleNotes = (e.scale&&e.scale.notes)||[];
+  if(scaleNotes.length){
+    srow=scaleNotes.map((nn,i)=>{
+      const pc=pcOf(nn); const cls=pc===sc.root?"snote root":"snote in";
+      return `<div class="${cls}">${esc(nn)}</div>`;
+    }).join("");
+  } else {
+    srow=[...sc.set].sort((a,b)=>a-b).map(pc=>`<div class="snote ${pc===sc.root?'root':'in'}">${PC_SHARP[pc]}</div>`).join("");
+  }
+  // files
+  const f=e.files||{};
+  let frows="";
+  if(f.wav) frows+=fileRow("WAV",f.wav);
+  (f.midi||[]).forEach((m,i)=>frows+=fileRow("MIDI",m));
+  if(f.stems){Object.keys(f.stems).forEach(st=>{if(f.stems[st])frows+=fileRow("STEM·"+st,f.stems[st]);});}
+  if(f.dissectReport) frows+=fileRow("DISSECT",f.dissectReport,true);
+  if(f.daw) frows+=fileRow("DAW",f.daw);
+  if(!frows) frows='<div class="filerow"><span class="fp" style="color:var(--text-dim)">no files referenced</span></div>';
+
+  // chord progression
+  let chips="";
+  (e.chordProgression||[]).forEach((c,i)=>{
+    chips+=`<div class="chordblk${c.borrowed?' borrowed':''}" data-ci="${i}" title="${c.borrowed?'borrowed / modal interchange':''}">
+      <div class="cn">${esc(c.chord)}</div>${c.roman?`<div class="cr">${esc(c.roman)}</div>`:""}</div>`;
+  });
+
+  // production
+  const p=e.production||{};
+  let prod="";
+  if(p.headline) prod+=`<div class="prod-note"><div class="pnt">Headline</div><p>${esc(p.headline)}</p></div>`;
+  if(p.diagnosis) prod+=`<div class="prod-note"><div class="pnt">Diagnosis</div><p>${esc(p.diagnosis)}</p></div>`;
+  if(Array.isArray(p.soundDesign)&&p.soundDesign.length){
+    prod+=`<div class="prod-note"><div class="pnt">Sound Design</div>`+
+      p.soundDesign.map(s=>`<div class="sd-item"><div class="sde">${esc(s.element||"")}</div><div class="sdo">${esc(s.observation||"")}</div>${s.recreate?`<div class="sdr">→ ${esc(s.recreate)}</div>`:""}</div>`).join("")+`</div>`;
+  }
+  if(Array.isArray(p.mixMoves)&&p.mixMoves.length) prod+=`<div class="prod-note"><div class="pnt">Mix Moves</div><ul class="plist">${p.mixMoves.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`;
+  if(Array.isArray(p.arrangement)&&p.arrangement.length) prod+=`<div class="prod-note"><div class="pnt">Arrangement</div><ul class="plist">${p.arrangement.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`;
+  if(Array.isArray(p.watchOuts)&&p.watchOuts.length) prod+=`<div class="prod-note"><div class="pnt" style="color:var(--gold)">Watch-Outs</div><ul class="plist">${p.watchOuts.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`;
+
+  // reference DNA
+  const dna=(e.referenceDNA||[]).map(d=>`<span class="dna">${esc(d)}</span>`).join("");
+
+  // energy sparkline + structure
+  let energyBlock="";
+  if(e.energy&&Array.isArray(e.energy.curve)&&e.energy.curve.length){
+    energyBlock=`<svg class="spark" viewBox="0 0 100 40" preserveAspectRatio="none">${sparkPath(e.energy.curve)}</svg>`;
+  }
+  let structBlock="";
+  if(Array.isArray(e.structure)&&e.structure.length){
+    const total=e.duration_s||e.structure[e.structure.length-1].end_s||1;
+    structBlock=`<div class="structrow">`+e.structure.map(s=>{
+      const w=Math.max(1,((s.end_s-s.start_s)/total)*100);
+      const rms=Math.max(0,Math.min(1,(s.rms||0)/0.4));
+      const col=`rgba(184,48,48,${(0.15+rms*0.7).toFixed(2)})`;
+      return `<div class="structseg" style="flex:${w} 0 auto;background:${col}" title="${esc(s.label||'')} ${fmtDur(s.start_s)}–${fmtDur(s.end_s)}"></div>`;
+    }).join("")+`</div>`;
+  }
+
+  // soundcloud
+  let sc_block="";
+  if(e.soundcloudUrl){
+    const u="https://w.soundcloud.com/player/?url="+encodeURIComponent(e.soundcloudUrl)+"&color=%238b2020&inverse=false&auto_play=false&show_user=true";
+    sc_block=`<iframe class="sc-iframe" id="scFrame" scrolling="no" frameborder="no" allow="autoplay" src="${u}"></iframe>
+      <div style="margin-top:6px"><button class="ghost" id="scClear" style="font-size:10px">remove link</button></div>`;
+  } else {
+    sc_block=`<div class="sc-input"><input type="url" id="scUrl" placeholder="paste SoundCloud track URL…"><button class="ghost" id="scSave">Save</button></div>`;
+  }
+
+  // relationships
+  let rel="";
+  const r=e.relationships||{};
+  const harm=(r.harmonicMatches||[]); const vers=(r.versions||[]);
+  if(harm.length||vers.length){
+    rel=`<div class="pblock"><div class="lbl">Relationships</div>`;
+    if(vers.length) rel+=`<div class="prod-note"><div class="pnt">Versions</div><div class="dna-row">${vers.map(v=>`<span class="dna" data-relid="${esc(v)}">${esc(v)}</span>`).join("")}</div></div>`;
+    if(harm.length) rel+=`<div class="prod-note"><div class="pnt">Mixes with (±1 / relative)</div><div class="dna-row">${harm.map(v=>`<span class="dna" data-relid="${esc(v)}">${esc(v)}</span>`).join("")}</div></div>`;
+    rel+=`</div>`;
+  }
+
+  // comments
+  const comments=(e.comments||[]).map(c=>commentHTML(c)).join("");
+
+  return `
+  <button class="btn-primary" id="btnPlayKey">▶ PLAY THE KEY</button>
+
+  <div class="pblock"><div class="lbl">Key / Scale</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:6px">${esc(sc.name)} ${k.camelot?`· Camelot ${esc(k.camelot)}`:""} ${conf.gap!=null?`<span style="color:var(--text-dim)">· conf gap ${conf.gap} (2nd: ${esc(conf.second_best||"")})</span>`:""}</div>
+    <div class="scalerow">${srow}</div>
+  </div>
+
+  <div class="pblock"><div class="lbl">Tempo / Meta</div>
+    <div class="kv-grid">
+      <div class="kv"><div class="k">BPM</div><div class="v">${e.bpm?(+e.bpm).toFixed(2):"—"}${e.bpmHalfTime?` <small>½ ${(+e.bpmHalfTime).toFixed(1)}</small>`:""}</div></div>
+      <div class="kv"><div class="k">Camelot</div><div class="v">${esc(k.camelot||"—")}</div></div>
+      <div class="kv"><div class="k">Duration</div><div class="v">${fmtDur(e.duration_s)}</div></div>
+      <div class="kv"><div class="k">Sig</div><div class="v">${esc(e.timeSignature||"4/4")}</div></div>
+      <div class="kv"><div class="k">Energy</div><div class="v">${e.energy&&e.energy.score!=null?(+e.energy.score).toFixed(2):"—"}</div></div>
+      <div class="kv"><div class="k">Status</div><div class="v">${esc(e.status||"—")}</div></div>
+    </div>
+    ${energyBlock?`<div style="font-size:9px;color:var(--text-dim);letter-spacing:.1em;margin-top:12px;text-transform:uppercase">Energy curve</div>${energyBlock}`:""}
+    ${structBlock?`<div style="font-size:9px;color:var(--text-dim);letter-spacing:.1em;margin-top:10px;text-transform:uppercase">Structure</div>${structBlock}`:""}
+  </div>
+
+  ${chips?`<div class="pblock"><div class="lbl">Chord Progression</div><div class="chordstrip" id="chordStrip">${chips}</div>
+    <div style="font-size:10px;color:var(--text-dim);margin-top:8px">Click a chord to play it · ▶ PLAY THE KEY runs the full progression. Cooler blocks = borrowed / off-scale.</div></div>`:""}
+
+  <div class="pblock"><div class="lbl">Tags <span class="edit-toggle" data-edit="tags">edit</span></div>
+    <div class="tagline" id="tagView" style="gap:8px">${(e.tags||[]).map(t=>`<span class="tag" style="font-size:11px">${esc(t)}</span>`).join("")||'<span style="color:var(--text-dim)">no tags</span>'}</div>
+  </div>
+
+  ${f.wav?`<div class="pblock"><div class="lbl">Audition</div>
+    <audio class="audio-audition" controls preload="none" src="${esc(String(f.wav).startsWith("http")||String(f.wav).startsWith("file:")?f.wav:"file://"+f.wav)}"></audio>
+    <div style="font-size:9px;color:var(--text-dim);margin-top:4px">Plays the local WAV next to the piano. If silent, the browser is blocking file:// media — open the file directly via the Files list below.</div></div>`:""}
+
+  <div class="pblock"><div class="lbl">SoundCloud</div>${sc_block}</div>
+
+  <div class="pblock"><div class="lbl">Files</div>${frows}</div>
+
+  ${prod?`<div class="pblock"><div class="lbl">Production Notes</div>${prod}</div>`:""}
+  ${dna?`<div class="pblock"><div class="lbl">Reference DNA</div><div class="dna-row">${dna}</div></div>`:""}
+  ${rel}
+
+  <div class="pblock"><div class="lbl">Comments</div>
+    <div id="commentList">${comments||'<div style="color:var(--text-dim);font-size:11px">No notes yet. Capture a thought below — it persists locally.</div>'}</div>
+    <div class="commentbox" id="commentBox">
+      <textarea id="commentInput" placeholder="add a note (mix idea, arrangement, todo)…"></textarea>
+      <div class="cb-actions"><button class="ghost" id="addNote">Add Note</button></div>
+    </div>
+  </div>`;
+}
+
+function renderTool(e){
+  const cap=(e.capabilities||e.tags||[]).map(c=>`<li>${esc(c)}</li>`).join("");
+  const comments=(e.comments||[]).map(c=>commentHTML(c)).join("");
+  return `
+  <div class="pblock"><div class="lbl">Tool</div>
+    <div class="kv-grid">
+      <div class="kv"><div class="k">Trigger</div><div class="v">${esc(e.trigger||"—")}</div></div>
+      <div class="kv"><div class="k">Status</div><div class="v">${esc(e.status||"—")}</div></div>
+      <div class="kv"><div class="k">Kind</div><div class="v">${esc(e.kind||"skill")}</div></div>
+    </div>
+  </div>
+  ${e.launch?`<div class="pblock"><div class="lbl">Launch</div><a href="${esc(e.launch)}" target="_blank" rel="noopener" style="display:inline-block;padding:10px 22px;background:var(--accent);color:#fff;text-decoration:none;font-family:'Bebas Neue',sans-serif;letter-spacing:1.5px;font-size:20px;border-radius:3px">▶ OPEN ${esc(e.title)}</a></div>`:""}
+  ${e.description?`<div class="pblock"><div class="lbl">What it does</div><p style="color:var(--text-muted);font-size:12px;line-height:1.6">${esc(e.description)}</p></div>`:""}
+  ${cap?`<div class="pblock"><div class="lbl">Capabilities</div><ul class="plist">${cap}</ul></div>`:""}
+  ${e.script?`<div class="pblock"><div class="lbl">Script</div>${fileRow("PY",e.script)}</div>`:""}
+  ${e.report||e.proposal?`<div class="pblock"><div class="lbl">Docs</div>${e.report?fileRow("DOC",e.report,true):""}${e.proposal?fileRow("PROP",e.proposal,true):""}</div>`:""}
+  <div class="pblock"><div class="lbl">Comments</div>
+    <div id="commentList">${comments||'<div style="color:var(--text-dim);font-size:11px">No notes yet.</div>'}</div>
+    <div class="commentbox" id="commentBox">
+      <textarea id="commentInput" placeholder="add a note about this tool…"></textarea>
+      <div class="cb-actions"><button class="ghost" id="addNote">Add Note</button></div>
+    </div>
+  </div>`;
+}
+
+function fileRow(type,path,isLink){
+  const href=String(path).startsWith("http")||String(path).startsWith("file:")?path:"file://"+path;
+  const inner = isLink
+    ? `<a class="fp" href="${esc(href)}" target="_blank" rel="noopener">${esc(path)}</a>`
+    : `<a class="fp" href="${esc(href)}" target="_blank" rel="noopener">${esc(path)}</a>`;
+  return `<div class="filerow"><span class="ft">${esc(type)}</span>${inner}</div>`;
+}
+function commentHTML(c){
+  const d=new Date(c.ts||Date.now());
+  return `<div class="comment" data-cid="${esc(c.id)}">
+    <div class="ct">${esc(c.text)}</div>
+    <div class="cm"><span>${esc(c.author||"felipe")} · ${d.toLocaleString()}</span><button class="cdel" data-del="${esc(c.id)}">delete</button></div>
+  </div>`;
+}
+function sparkPath(curve){
+  const max=Math.max(...curve)||1; const n=curve.length;
+  const pts=curve.map((v,i)=>[(i/(n-1))*100,40-(v/max)*38]);
+  const d="M"+pts.map(p=>p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" L");
+  return `<path d="${d}" fill="none" stroke="var(--accent-light)" stroke-width="1"/>`;
+}
+
+function wireProfile(e){
+  // close
+  // play the key
+  const pk=$("#btnPlayKey"); if(pk) pk.addEventListener("click",()=>playTheKey(e));
+  // chord clicks
+  $$("#chordStrip .chordblk").forEach(b=>b.addEventListener("click",()=>{
+    const ci=+b.dataset.ci; const c=(e.chordProgression||[])[ci];
+    if(!c)return; playChord(c.chord, c.borrowed, b);
+  }));
+  // soundcloud
+  const scSave=$("#scSave"); if(scSave) scSave.addEventListener("click",()=>{
+    const u=$("#scUrl").value.trim(); if(!u)return;
+    setOverlayField(e.id,"soundcloudUrl",u); touch(e.id); openProfile(e.id);
+  });
+  const scClear=$("#scClear"); if(scClear) scClear.addEventListener("click",()=>{
+    setOverlayField(e.id,"soundcloudUrl",null); openProfile(e.id);
+  });
+  // tags edit
+  const te=$('[data-edit="tags"]'); if(te) te.addEventListener("click",()=>{
+    const cur=(getEntity(e.id).tags||[]).join(", ");
+    const v=prompt("Tags (comma-separated):",cur);
+    if(v!=null){setOverlayField(e.id,"tags",v.split(",").map(s=>s.trim()).filter(Boolean));touch(e.id);openProfile(e.id);renderGrid();}
+  });
+  // comments
+  const addBtn=$("#addNote"); if(addBtn) addBtn.addEventListener("click",()=>addComment(e.id));
+  $$("#commentList .cdel").forEach(b=>b.addEventListener("click",()=>delComment(e.id,b.dataset.del)));
+  // relationship jumps
+  $$("[data-relid]").forEach(r=>r.addEventListener("click",()=>{
+    const target=allEntities().find(x=>x.id===r.dataset.relid || (x.title||"").toLowerCase().includes(r.dataset.relid.toLowerCase()));
+    if(target) openProfile(target.id);
+  }));
+}
+function touch(id){
+  if(!OVERLAY[id]) OVERLAY[id]={type:(getEntity(id)||{}).type||"track"};
+  OVERLAY[id].updatedAt=new Date().toISOString(); saveOverlay();
+}
+function addComment(id){
+  const inp=$("#commentInput"); const txt=inp.value.trim(); if(!txt)return;
+  if(!OVERLAY[id]) OVERLAY[id]={type:(getEntity(id)||{}).type||"track"};
+  if(!Array.isArray(OVERLAY[id].comments)) OVERLAY[id].comments=[];
+  OVERLAY[id].comments.push({id:uuid(),ts:new Date().toISOString(),author:"felipe",text:txt});
+  saveOverlay(); buildMerged(); inp.value="";
+  // re-render comment list only
+  const e=getEntity(id);
+  $("#commentList").innerHTML=(e.comments||[]).map(commentHTML).join("");
+  $$("#commentList .cdel").forEach(b=>b.addEventListener("click",()=>delComment(id,b.dataset.del)));
+  const box=$("#commentBox"); box.classList.remove("savepulse"); void box.offsetWidth; box.classList.add("savepulse");
+  renderGrid(); updateCount();
+}
+function delComment(id,cid){
+  // mark deletion in overlay (tombstone via filtering); we store remaining overlay comments and a removed seed comment guard
+  if(!OVERLAY[id]) OVERLAY[id]={type:(getEntity(id)||{}).type||"track"};
+  // if it's an overlay comment, drop it; if seed comment, add tombstone
+  let oc=OVERLAY[id].comments||[];
+  const before=oc.length;
+  oc=oc.filter(c=>c.id!==cid);
+  if(oc.length===before){ // was a seed comment -> tombstone
+    oc.push({id:cid,text:"",ts:new Date().toISOString(),deleted:true});
+  }
+  OVERLAY[id].comments=oc; saveOverlay(); buildMerged();
+  const e=getEntity(id);
+  // filter tombstoned in display
+  const live=(e.comments||[]).filter(c=>!c.deleted && c.text!=="");
+  $("#commentList").innerHTML=live.map(commentHTML).join("")||'<div style="color:var(--text-dim);font-size:11px">No notes yet.</div>';
+  $$("#commentList .cdel").forEach(b=>b.addEventListener("click",()=>delComment(id,b.dataset.del)));
+  renderGrid(); updateCount();
+}
+
+/* ============================================================ PIANO + SCALE */
+const PIANO_LO=48, PIANO_HI=84; // C3..C6 (37 keys) using midi numbering C3=48
+const BLACK_PC=new Set([1,3,6,8,10]);
+function buildPiano(){
+  const cont=$("#keys"); cont.innerHTML="";
+  // white keys flow
+  const whites=[]; for(let m=PIANO_LO;m<=PIANO_HI;m++){if(!BLACK_PC.has(m%12)) whites.push(m);}
+  const wWidth=100/whites.length;
+  whites.forEach((m)=>{
+    const k=document.createElement("div");
+    k.className="wkey"; k.dataset.midi=m;
+    k.innerHTML=`<span class="klabel">${m%12===0?midiName(m):""}</span>`;
+    cont.appendChild(k);
+  });
+  // black keys absolute, positioned between whites
+  let wi=0;
+  for(let m=PIANO_LO;m<=PIANO_HI;m++){
+    if(BLACK_PC.has(m%12)){
+      const b=document.createElement("div");
+      b.className="bkey"; b.dataset.midi=m;
+      // position: left of upcoming white = wi*wWidth - half black width
+      const leftPct = wi*wWidth - wWidth*0.30;
+      b.style.left = leftPct+"%";
+      b.style.width = (wWidth*0.6)+"%";
+      cont.appendChild(b);
+    } else { wi++; }
+  }
+  // pointer events
+  cont.querySelectorAll(".wkey,.bkey").forEach(k=>{
+    const m=+k.dataset.midi;
+    k.addEventListener("pointerdown",ev=>{ev.preventDefault();noteOn(m,0.9);k.classList.add("active");k.setPointerCapture&&k.setPointerCapture(ev.pointerId);});
+    k.addEventListener("pointerup",()=>{noteOff(m);k.classList.remove("active");});
+    k.addEventListener("pointerleave",()=>{if(voices[m]){noteOff(m);k.classList.remove("active");}});
+    k.addEventListener("pointerenter",ev=>{if(ev.buttons===1){noteOn(m,0.8);k.classList.add("active");}});
+  });
+}
+function keyEl(midi){return $(`#keys [data-midi="${midi}"]`);}
+function paintScale(){
+  $$("#keys .wkey,#keys .bkey").forEach(k=>{
+    k.classList.remove("in-scale","root","offscale-lit");
+    const m=+k.dataset.midi; const pc=m%12;
+    if(currentScalePCs){
+      if(pc===currentRootPC) k.classList.add("root");
+      else if(currentScalePCs.has(pc)) k.classList.add("in-scale");
+    }
+    if(currentOffscalePCs && currentOffscalePCs.has(pc) && !(currentScalePCs&&currentScalePCs.has(pc))){
+      k.classList.add("offscale-lit");
+    }
+  });
+}
+function loadScaleToPiano(e){
+  const sc=entityScale(e);
+  currentScalePCs=sc.set; currentRootPC=sc.root; currentOffscalePCs=null;
+  $("#pianoCtx").innerHTML=`<span>${esc(e.title)} ·</span> ${esc(sc.name)}`;
+  $("#btnProg").style.display=(e.type==="track" && (e.chordProgression||[]).length)?"":"none";
+  $("#btnProg").onclick=()=>playTheKey(e);
+  paintScale();
+}
+function setExploreScale(){
+  const root=$("#exploreRoot").value, mode=$("#exploreScale").value;
+  currentScalePCs=scaleSet(root,mode); currentRootPC=pcOf(root); currentOffscalePCs=null;
+  $("#pianoCtx").innerHTML=`<span>EXPLORE ·</span> ${esc(root)} ${esc(mode)}`;
+  $("#btnProg").style.display="none";
+  paintScale();
+}
+
+/* lights a set of midi notes briefly + sounds them */
+function lightAndSound(midis, dur, offscalePCs){
+  midis.forEach(m=>{
+    noteOn(m,0.8);
+    let el=keyEl(m);
+    if(!el){ // if outside piano range, wrap into range
+      let mm=m; while(mm<PIANO_LO)mm+=12; while(mm>PIANO_HI)mm-=12; el=keyEl(mm);
+    }
+    if(el){
+      const pc=m%12;
+      if(offscalePCs&&offscalePCs.has(pc)){el.classList.add("offscale-lit");el.style.boxShadow="inset 0 0 0 2px var(--offscale)";}
+      el.classList.add("active");
+    }
+  });
+  setTimeout(()=>{
+    midis.forEach(m=>{noteOff(m);let mm=m;while(mm<PIANO_LO)mm+=12;while(mm>PIANO_HI)mm-=12;const el=keyEl(mm);if(el){el.classList.remove("active");el.style.boxShadow="";}});
+    paintScale();
+  },dur-40);
+}
+function playChord(sym, borrowed, blkEl){
+  ensureAudio();
+  const off = borrowed? new Set(parseChord(sym).pcs.filter(pc=>!currentScalePCs||!currentScalePCs.has(pc))) : null;
+  const notes=voiceChord(sym,48);
+  if(blkEl){blkEl.classList.add("playing");setTimeout(()=>blkEl.classList.remove("playing"),700);}
+  lightAndSound(notes,700,off);
+}
+/* ---------------- mini Camelot wheel (corner map layer) ---------------- */
+function buildMiniWheel(activeCam){
+  const svg=$("#miniWheel"); if(!svg) return;
+  let html="";
+  // 12 wedges (outer ring = the harmonic map), labelled by camelot number
+  for(let n=1;n<=12;n++){
+    const a0=(n-1)*30-90-15, a1=(n-1)*30-90+15;
+    html+=`<path class="mw-slice" data-cam="${n}" d="${arc(0,0,22,44,a0,a1)}"></path>`;
+    const la=(n-1)*30-90;
+    html+=`<text class="mw-lbl" x="${px(33,la).toFixed(1)}" y="${(py(33,la)+1.5).toFixed(1)}" text-anchor="middle">${n}</text>`;
+  }
+  // arc overlay (one per chord, drawn on demand)
+  html+=`<g id="mwArcs"></g>`;
+  html+=`<text class="mw-ttl" x="0" y="2.5" text-anchor="middle">SKY</text>`;
+  svg.innerHTML=html;
+}
+// draw a glowing arc on the mini wheel for a chord's root (mapped to nearest camelot slot of the track key)
+function lightMiniArc(num, borrowed){
+  const svg=$("#miniWheel"); if(!svg) return;
+  const slices=svg.querySelectorAll(".mw-slice");
+  slices.forEach(s=>s.classList.remove("lit","lit-borrowed"));
+  const tg=svg.querySelector("#mwArcs"); if(tg) tg.innerHTML="";
+  if(num==null) return;
+  const sl=svg.querySelector(`.mw-slice[data-cam="${num}"]`);
+  if(sl) sl.classList.add(borrowed?"lit-borrowed":"lit");
+  // glowing arc stroke along the outer rim of that wedge
+  const a0=(num-1)*30-90-13, a1=(num-1)*30-90+13;
+  const x0=px(40,a0).toFixed(1), y0=py(40,a0).toFixed(1);
+  const x1=px(40,a1).toFixed(1), y1=py(40,a1).toFixed(1);
+  if(tg){
+    tg.innerHTML=`<path class="mw-arc on${borrowed?' borrowed':''}" d="M${x0} ${y0} A40 40 0 0 1 ${x1} ${y1}"/>`;
+  }
+}
+function showMiniWheel(on){const w=$("#miniWheel"); if(w) w.classList.toggle("show",!!on);}
+// pitch-class -> Camelot number. minorPC->A-number (8A=Am=pc9). Circle of fifths.
+// minor camelot numbers by pc: Am=8A. Going up a 5th = +1 number. pc+7 -> num+1.
+const PC_TO_CAM_MINOR={9:8,4:9,11:10,6:11,1:12,8:1,3:2,10:3,5:4,0:5,7:6,2:7}; // Am=8 ...
+function pcToCamNum(pc, isMajor){
+  // relative major shares the SAME camelot number as its relative minor (e.g. C major 8B / A minor 8A)
+  // major root pc -> its relative minor pc = pc-3; reuse minor table
+  const minorPc = isMajor? ((pc-3)%12+12)%12 : ((pc%12)+12)%12;
+  return PC_TO_CAM_MINOR[minorPc] ?? null;
+}
+
+let progTimer=null;
+function playTheKey(e){
+  ensureAudio();
+  panic(); clearTimeout(progTimer);
+  const sc=entityScale(e);
+  currentScalePCs=sc.set; currentRootPC=sc.root; currentOffscalePCs=null; paintScale();
+  // ----- cinematic zoom: star/profile -> piano -----
+  const piano=$("#piano"); if(piano){piano.classList.remove("igniting"); void piano.offsetWidth; piano.classList.add("igniting");}
+  const kw=document.querySelector(".keys-wrap"); if(kw){kw.classList.remove("zoomflash"); void kw.offsetWidth; kw.classList.add("zoomflash");}
+  // fire the source star on the SKY wheel (if rendered)
+  const srcStar=document.querySelector(`#wheelSvg .star[data-id="${cssesc(e.id)}"]`);
+  if(srcStar){srcStar.classList.remove("firing"); void srcStar.getBBox; srcStar.classList.add("firing"); setTimeout(()=>srcStar.classList.remove("firing"),950);}
+  // ----- mini wheel (map layer) -----
+  const baseCamNum = parseInt((e.key||{}).camelot)||null;
+  buildMiniWheel(baseCamNum); showMiniWheel(true);
+  // mute soundcloud if present
+  try{const f=document.getElementById("scFrame"); if(f){f.contentWindow.postMessage('{"method":"pause"}','*');}}catch(x){}
+  // step 1: ignite scale note-by-note ascending
+  const sorted=[...sc.set].sort((a,b)=>a-b);
+  let i=0;
+  const igniteEvery=70;
+  function ignite(){
+    if(i>=sorted.length){ setTimeout(runProg,260); return; }
+    const m=60+ ((sorted[i]-currentRootPC+12)%12) + (sorted[i]<currentRootPC?0:0);
+    let mm=60+sorted[i]; while(mm<PIANO_LO)mm+=12; while(mm>PIANO_HI)mm-=12;
+    noteOn(mm,0.5); const el=keyEl(mm); if(el)el.classList.add("active");
+    setTimeout(()=>{noteOff(mm);const el2=keyEl(mm);if(el2)el2.classList.remove("active");paintScale();},igniteEvery+40);
+    i++; progTimer=setTimeout(ignite,igniteEvery);
+  }
+  // step 2: progression
+  function runProg(){
+    const prog=e.chordProgression||[]; if(!prog.length){showMiniWheel(false);return;}
+    const bpm=+e.bpm||140; const barMs=(60000/bpm)*4; const chordMs=barMs*2; // 2 bars/chord
+    let ci=0;
+    function step(){
+      if(ci>=prog.length){
+        // fade out the map after the last chord lingers
+        progTimer=setTimeout(()=>{lightMiniArc(null);showMiniWheel(false);},chordMs);
+        return;
+      }
+      const c=prog[ci];
+      const blk=$(`#chordStrip .chordblk[data-ci="${ci}"]`);
+      if(blk){$$("#chordStrip .chordblk").forEach(x=>x.classList.remove("playing"));blk.classList.add("playing");}
+      const pc=parseChord(c.chord);
+      const isMaj = (pc.intervals||[]).includes(4); // has a major third
+      lightMiniArc(pcToCamNum(pc.root, isMaj), !!c.borrowed); // glowing arc on the corner map
+      const off = c.borrowed? new Set(pc.pcs.filter(p=>!sc.set.has(p))) : null;
+      const notes=voiceChord(c.chord,48);
+      lightAndSound(notes, Math.min(chordMs,1400), off);
+      ci++; progTimer=setTimeout(step, chordMs);
+    }
+    step();
+  }
+  ignite();
+}
+
+/* ============================================================ COMPUTER KEYBOARD */
+const KEYMAP={ // relative to active octave (oct4 base = C4=60)
+  a:0,w:1,s:2,e:3,d:4,f:5,t:6,g:7,y:8,h:9,u:10,j:11,k:12,
+  o:13,l:14,p:15,";":16,"'":17
+};
+const held=new Set();
+function kbMidi(ch){ return 60 + (activeOctave-4)*12 + KEYMAP[ch]; }
+function updateOctInd(){const v=$("#octVal");if(v)v.textContent=activeOctave;const ind=$("#octInd");if(ind){ind.classList.remove("bump");void ind.offsetWidth;ind.classList.add("bump");}}
+document.addEventListener("keydown",ev=>{
+  if(ev.target.tagName==="TEXTAREA"||ev.target.tagName==="INPUT"||ev.target.tagName==="SELECT") return;
+  const ch=ev.key.toLowerCase();
+  if(ch==="z"){activeOctave=Math.max(2,activeOctave-1);updateOctInd();return;}
+  if(ch==="x"){activeOctave=Math.min(6,activeOctave+1);updateOctInd();return;}
+  if(!(ch in KEYMAP))return;
+  if(held.has(ch))return; held.add(ch);
+  const m=kbMidi(ch); let mm=m; while(mm<PIANO_LO)mm+=12; while(mm>PIANO_HI)mm-=12;
+  noteOn(mm,0.85); const el=keyEl(mm); if(el)el.classList.add("active");
+});
+document.addEventListener("keyup",ev=>{
+  const ch=ev.key.toLowerCase(); if(!(ch in KEYMAP))return;
+  held.delete(ch);
+  const m=kbMidi(ch); let mm=m; while(mm<PIANO_LO)mm+=12; while(mm>PIANO_HI)mm-=12;
+  noteOff(mm); const el=keyEl(mm); if(el)el.classList.remove("active");
+});
+
+/* ============================================================ WAVEFORM */
+function drawWave(){
+  requestAnimationFrame(drawWave);
+  const cv=$("#waveCanvas"); if(!cv||!analyser)return;
+  const ctx=cv.getContext("2d");
+  const w=cv.width=cv.clientWidth, h=cv.height=cv.clientHeight;
+  ctx.clearRect(0,0,w,h);
+  const buf=new Uint8Array(analyser.fftSize); analyser.getByteTimeDomainData(buf);
+  ctx.beginPath(); ctx.strokeStyle="rgba(184,48,48,.6)"; ctx.lineWidth=1;
+  for(let i=0;i<buf.length;i++){const x=(i/buf.length)*w;const y=(buf[i]/255)*h;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+  ctx.stroke();
+}
+
+/* ============================================================ EXPORT / IMPORT */
+// strip tombstoned/empty comments so round-tripped catalog.js stays clean
+function cleanForExport(arr){
+  return (arr||[]).map(e=>{
+    const c=JSON.parse(JSON.stringify(e));
+    if(Array.isArray(c.comments)) c.comments=c.comments.filter(x=>x && !x.deleted && (x.text||"").trim()!=="");
+    return c;
+  });
+}
+function exportJSON(){
+  buildMerged();
+  const out={
+    meta:Object.assign({},MERGED.meta,{exportedAt:new Date().toISOString(),schemaVersion:1}),
+    tracks:cleanForExport(MERGED.tracks), tools:cleanForExport(MERGED.tools), ideas:cleanForExport(MERGED.ideas)
+  };
+  const blob=new Blob([JSON.stringify(out,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  const d=new Date().toISOString().slice(0,10);
+  a.download="catalog."+d+".json"; a.click();
+}
+function importJSON(file){
+  const fr=new FileReader();
+  fr.onload=()=>{
+    try{
+      const data=JSON.parse(fr.result);
+      if(data.meta&&data.meta.schemaVersion && data.meta.schemaVersion!==1){
+        if(!confirm("schemaVersion mismatch ("+data.meta.schemaVersion+"). Import anyway?"))return;
+      }
+      const ents=[...(data.tracks||[]),...(data.tools||[]),...(data.ideas||[])];
+      ents.forEach(e=>{
+        if(!OVERLAY[e.id]) OVERLAY[e.id]={type:e.type||"track"};
+        // merge editable fields
+        EDITABLE.forEach(f=>{if(e[f]!==undefined)OVERLAY[e.id][f]=e[f];});
+        // union comments
+        const oc=OVERLAY[e.id].comments||[]; const byId={}; oc.forEach(c=>byId[c.id]=c);
+        (e.comments||[]).forEach(c=>byId[c.id]=Object.assign({},byId[c.id],c));
+        OVERLAY[e.id].comments=Object.values(byId);
+      });
+      saveOverlay(); buildMerged(); renderGrid(); drawWheel(); updateCount();
+      alert("Imported "+ents.length+" entities (comments unioned, non-destructive).");
+    }catch(err){alert("Import failed: "+err.message);}
+  };
+  fr.readAsText(file);
+}
+
+/* ============================================================ COUNT / INIT */
+function updateCount(){
+  const t=MERGED.tracks.length, o=MERGED.tools.length;
+  const nc=allEntities().reduce((s,e)=>s+((e.comments||[]).filter(c=>!c.deleted&&c.text!=="").length),0);
+  $("#countChip").innerHTML=`<b>${t}</b> tracks · <b>${o}</b> tools · ${nc} notes`;
+}
+function buildSkyStatus(){
+  const cams=MERGED.tracks.map(e=>(e.key||{}).camelot).filter(Boolean).map(c=>parseInt(c)).filter(n=>!isNaN(n));
+  const lo=cams.length?Math.min(...cams):"—", hi=cams.length?Math.max(...cams):"—";
+  const wip=MERGED.tracks.filter(e=>e.status==="wip").length;
+  $("#skyStatus").textContent=`${MERGED.tracks.length} TRACKS · ${wip} WIP · KEYS ${lo}A–${hi}A · CONSTELLATION STABLE`;
+}
+function populateExplore(){
+  const r=$("#exploreRoot"); r.innerHTML=PC_SHARP.map(n=>`<option ${n==="C"?"selected":""}>${n}</option>`).join("");
+  const s=$("#exploreScale"); s.innerHTML=Object.keys(SCALES).filter((v,i,a)=>a.indexOf(v)===i).map(m=>`<option ${m==="mixolydian"?"":""}${m==="minor"?"selected":""}>${m}</option>`).join("");
+  r.addEventListener("change",setExploreScale); s.addEventListener("change",setExploreScale);
+}
+
+/* ============================================================ ADD ENTRY (overlay-only) */
+let addEntryType="track";
+function slugify(s){return String(s||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40)||"untitled";}
+function camelotFor(tonicName, mode){
+  const isMaj=/maj/i.test(mode||"");
+  const num=pcToCamNum(pcOf(tonicName), isMaj);
+  return num? num+(isMaj?"B":"A") : "";
+}
+function openAddModal(){
+  // populate tonic/mode selects (once)
+  const tn=$("#aTonic"); if(tn && !tn.options.length) tn.innerHTML=PC_SHARP.map(n=>`<option${n==="A"?" selected":""}>${n}</option>`).join("");
+  const md=$("#aMode"); if(md && !md.options.length) md.innerHTML=Object.keys(SCALES).filter((v,i,a)=>a.indexOf(v)===i).map(m=>`<option${m==="minor"?" selected":""}>${m}</option>`).join("");
+  addEntryType="track";
+  $$("#addType .seg").forEach(x=>x.classList.toggle("active",x.dataset.t==="track"));
+  ["aTitle","aVer","aBpm","aCamelot","aTrigger","aTags","aWav"].forEach(id=>{const el=$("#"+id);if(el)el.value="";});
+  syncAddFields();
+  $("#addModal").classList.add("show");
+  setTimeout(()=>{const t=$("#aTitle");if(t)t.focus();},60);
+}
+function closeAddModal(){$("#addModal").classList.remove("show");}
+function syncAddFields(){
+  const isTrack=addEntryType==="track", isTool=addEntryType==="tool";
+  $$(".track-only").forEach(el=>el.style.display=isTrack?"":"none");
+  $$(".tool-only").forEach(el=>el.style.display=isTool?"":"none");
+}
+function createEntry(){
+  const title=($("#aTitle").value||"").trim();
+  if(!title){alert("Give it a title.");return;}
+  const type=addEntryType;
+  const base=type==="tool"?"tool":type==="idea"?"idea":"emitr";
+  let id=base+"-"+slugify(title);
+  // ensure unique against seed + overlay
+  let n=2; const taken=new Set([...allEntities().map(x=>x.id),...Object.keys(OVERLAY)]);
+  while(taken.has(id)){id=base+"-"+slugify(title)+"-"+n++;}
+  const now=new Date().toISOString();
+  const ov={type,category:type,title,status:$("#aStatus").value,createdAt:now,updatedAt:now,comments:[]};
+  const tags=($("#aTags").value||"").split(",").map(s=>s.trim()).filter(Boolean);
+  if(tags.length) ov.tags=tags;
+  if(($("#aVer").value||"").trim()) ov.version=$("#aVer").value.trim();
+  if(type==="track"){
+    const tonic=$("#aTonic").value, mode=$("#aMode").value;
+    const cam=($("#aCamelot").value||"").trim()||camelotFor(tonic,mode);
+    ov.key={tonic,mode,label:tonic+" "+mode,camelot:cam};
+    ov.scale={name:tonic+" "+mode,mode,notes:[...scaleSet(tonic,mode)].sort((a,b)=>a-b).map(pc=>PC_SHARP[pc])};
+    const bpm=parseFloat($("#aBpm").value); if(!isNaN(bpm)) ov.bpm=bpm;
+    const wav=($("#aWav").value||"").trim(); if(wav) ov.files={wav};
+    ov.chordProgression=[{chord:tonic+(/maj/i.test(mode)?"maj":"min"),roman:/maj/i.test(mode)?"I":"i",borrowed:false}];
+  } else if(type==="tool"){
+    const trig=($("#aTrigger").value||"").trim(); if(trig) ov.trigger=trig;
+  }
+  // EDITABLE-set guard: overlay stores these directly; buildMerged() orphan-guard renders it
+  OVERLAY[id]=Object.assign(OVERLAY[id]||{},ov);
+  saveOverlay(); buildMerged();
+  buildKeyFilter(); buildStatusChips(); renderGrid(); drawWheel(); updateCount(); buildSkyStatus();
+  closeAddModal();
+  openProfile(id);
+}
+
+function wireChrome(){
+  $$("[data-go]").forEach(b=>b.addEventListener("click",()=>{
+    const v=b.dataset.go;
+    if(b.dataset.filter){typeFilter=b.dataset.filter;$$("#typeChips .fchip").forEach(c=>c.classList.toggle("active",c.dataset.type===b.dataset.filter));renderGrid();}
+    go(v);
+  }));
+  $$("#typeChips .fchip").forEach(c=>c.addEventListener("click",()=>{
+    typeFilter=c.dataset.type;$$("#typeChips .fchip").forEach(x=>x.classList.remove("active"));c.classList.add("active");renderGrid();
+  }));
+  $("#statusChips").addEventListener("click",ev=>{const b=ev.target.closest(".fchip");if(!b)return;statusFilter=b.dataset.status;buildStatusChips();renderGrid();});
+  $("#keyFilter").addEventListener("change",e=>{keyFilter=e.target.value;renderGrid();});
+  $("#bpmFilter").addEventListener("change",e=>{bpmFilter=e.target.value;renderGrid();});
+  $("#sortSel").addEventListener("change",e=>{sortBy=e.target.value;renderGrid();});
+  // PIANO tab — pulse the ribbon + focus the explore root
+  const tp=$("#tabPiano"); if(tp) tp.addEventListener("click",()=>{
+    const p=$("#piano"); p.classList.remove("igniting"); void p.offsetWidth; p.classList.add("igniting");
+    const er=$("#exploreRoot"); if(er) er.focus();
+  });
+  // MIX MODE toggle (SKY)
+  const mt=$("#mixToggle"); if(mt) mt.addEventListener("click",()=>{
+    mixMode=!mixMode; mt.classList.toggle("on",mixMode);
+    mt.textContent="MIX MODE: "+(mixMode?"ON":"OFF");
+    mixSel=[]; $$("#wheelSvg .star.selected").forEach(x=>x.classList.remove("selected"));
+    $("#mixReadout").innerHTML=mixMode?"MIX MODE on — click two stars to test compatibility.":"Click a star → profile. Turn on MIX MODE to test a harmonic mix.";
+  });
+  // ADD ENTRY
+  $("#btnAdd").addEventListener("click",openAddModal);
+  $("#addClose").addEventListener("click",closeAddModal);
+  $("#addModal").addEventListener("click",ev=>{if(ev.target.id==="addModal")closeAddModal();});
+  $$("#addType .seg").forEach(s=>s.addEventListener("click",()=>{
+    $$("#addType .seg").forEach(x=>x.classList.remove("active")); s.classList.add("active");
+    addEntryType=s.dataset.t; syncAddFields();
+  }));
+  $("#addCreate").addEventListener("click",createEntry);
+  $("#pClose").addEventListener("click",closeProfile);
+  $("#backdrop").addEventListener("click",closeProfile);
+  $("#btnExport").addEventListener("click",exportJSON);
+  $("#btnImport").addEventListener("click",()=>$("#importFile").click());
+  $("#importFile").addEventListener("change",e=>{if(e.target.files[0])importJSON(e.target.files[0]);});
+  $("#btnPanic").addEventListener("click",panic);
+  $$(".sky-toggle .seg").forEach(s=>s.addEventListener("click",()=>{
+    $$(".sky-toggle .seg").forEach(x=>x.classList.remove("active"));s.classList.add("active");
+    skyType=s.dataset.skytype; drawWheel();
+  }));
+  // resume audio on first gesture
+  ["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev,()=>ensureAudio(),{once:true}));
+  // esc closes panel
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")closeProfile();});
+}
+
+/* ----------------- minimal built-in fallback seed (only if catalog.js missing) ----------------- */
+const FALLBACK={
+  meta:{version:"fallback",schemaVersion:1},
+  tracks:[{
+    id:"emitr-ton-v1-3",type:"track",category:"track",title:"Ton",version:"V1.3",status:"mixing",
+    key:{tonic:"A#",mode:"minor",label:"A# minor",camelot:"3A"},
+    scale:{name:"A# minor",mode:"minor",notes:["A#","C","C#","D#","F","F#","G#"]},
+    bpm:143.55,duration_s:324.41,tags:["dub-techno","sub-heavy"],
+    chordProgression:[{chord:"A#min",roman:"i"},{chord:"D#maj",roman:"IV"},{chord:"F#maj",roman:"VI"},{chord:"A#maj",roman:"I",borrowed:true}],
+    files:{},comments:[],energy:{score:0.6},createdAt:"2026-05-26"
+  },{
+    id:"emitr-cmixo-nostalgic",type:"track",category:"track",title:"C-Mixolydian (nostalgic)",version:"WIP",status:"wip",
+    key:{tonic:"C",mode:"mixolydian",label:"C Mixolydian",camelot:"8B"},
+    scale:{name:"C Mixolydian",mode:"mixolydian",notes:["C","D","E","F","G","A","Bb"]},
+    bpm:148,duration_s:null,tags:["nostalgic","epic","modal-interchange"],
+    chordProgression:[{chord:"Cadd9",roman:"I"},{chord:"Bb",roman:"bVII"},{chord:"Abmaj7",roman:"bVI",borrowed:true},{chord:"Fmaj7",roman:"IV"}],
+    files:{},comments:[],energy:{score:0.7},createdAt:"2026-06-28"
+  }],
+  tools:[],ideas:[]
+};
+
+function init(){
+  views={sky:$("#view-sky"),catalog:$("#view-catalog")};
+  loadOverlay();
+  SEED = (window.EMITR_CATALOG && (window.EMITR_CATALOG.tracks||window.EMITR_CATALOG.tools)) ? window.EMITR_CATALOG : null;
+  let usingFallback=false;
+  if(!SEED){ SEED=FALLBACK; usingFallback=true; }
+  if(!SEED.tracks) SEED.tracks=[];
+  if(!SEED.tools) SEED.tools=[];
+  if(!SEED.ideas) SEED.ideas=[];
+  buildMerged();
+  buildPiano(); paintScale();
+  populateExplore(); setExploreScale();
+  buildKeyFilter(); buildStatusChips();
+  renderGrid(); drawWheel(); buildSkyStatus(); updateCount();
+  wireChrome(); drawWave();
+  if(usingFallback && window.EMITR_CATALOG===undefined){
+    // friendly notice but keep app functional with fallback
+    console.warn("EMITR_CATALOG not found — running built-in fallback seed.");
+    $("#skyStatus").textContent="catalog.js missing — running built-in fallback ("+SEED.tracks.length+" tracks)";
+  }
+  go("sky");
+  // boot fade
+  setTimeout(()=>$("#boot").classList.add("gone"),1700);
+}
+
+document.addEventListener("DOMContentLoaded",init);
+})();
+</script>
+</body>
+</html>
